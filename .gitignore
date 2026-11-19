@@ -221,3 +221,43 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets and credentials
+.env
+secrets.toml
+*.pem
+*.key
+service-account*.json
+
+# Local data and temporary files
+temp/
+cache/
+*.log
+
+# Large geospatial files
+*.tif
+*.tiff
+*.img
+*.vrt
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+
+# Google Colab
+.drive/
