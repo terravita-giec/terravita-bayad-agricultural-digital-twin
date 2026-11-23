@@ -42,16 +42,16 @@ FILES = {
     "streams": DATA / "modul03" /
         "Bayad_Streams_1000_cells.tif",
 
-    "stress": DATA / "module04" /
+    "stress": DATA / "model_04" /
         "Bayad_Kharif2025_Relative_Stress.tif",
 
-    "stress_classes": DATA / "module04" /
+    "stress_classes": DATA / "model_04" /
         "Bayad_Kharif2025_Stress_Classes.tif",
 
-    "drainage": DATA / "module04" /
+    "drainage": DATA / "model_04" /
         "Bayad_Kharif2025_Drainage_Distance.tif",
 
-    "clusters": DATA / "module04" /
+    "clusters": DATA / "model_04" /
         "Bayad_Kharif2025_GeoAI_Clusters.tif",
 
     "priority": DATA / "module05" /
