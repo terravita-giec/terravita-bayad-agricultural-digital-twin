@@ -1,11 +1,12 @@
-streamlit
-rasterio
-geopandas
-shapely
-pyproj
+streamlit>=1.35
 numpy
 pandas
 matplotlib
 plotly
 folium
 streamlit-folium
+geopandas
+shapely>=2.0
+pyproj
+rasterio
+reportlab
