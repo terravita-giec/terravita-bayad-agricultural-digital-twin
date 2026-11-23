@@ -33,13 +33,13 @@ FILES = {
     "indices": DATA / "module02" /
         "Bayad_Kharif_2025_Indices.tif",
 
-    "terrain": DATA / "module03" /
+    "terrain": DATA / "modul03" /
         "Bayad_SRTM_Terrain_30m.tif",
 
-    "rainfall": DATA / "module03" /
+    "rainfall": DATA / "modul03" /
         "Bayad_Kharif_2025_Rainfall.tif",
 
-    "streams": DATA / "module03" /
+    "streams": DATA / "modul03" /
         "Bayad_Streams_1000_cells.tif",
 
     "stress": DATA / "module04" /
