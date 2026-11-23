@@ -1,3 +1,10 @@
+## Live Demo
+- Landing page: https://YOUR-USERNAME.github.io/YOUR-REPO/
+- Interactive dashboard: https://YOUR-APP.streamlit.app
+
+## Run locally
+pip install -r requirements.txt
+streamlit run app.py
 
 # TerraVita | AI-Driven Agricultural Digital Twin
 
