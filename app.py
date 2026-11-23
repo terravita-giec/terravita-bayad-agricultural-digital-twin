@@ -1,1342 +1,821 @@
-# ============================================================
-# TERRAVITA | MODULE 06
-# BAYAD AGRICULTURAL DIGITAL TWIN DASHBOARD
-# Google Colab + Streamlit
-# ============================================================
+"""
+TerraVita | Bayad Agricultural Digital Twin - Module 06 dashboard
+Runs on Streamlit Community Cloud or locally (streamlit run app.py).
 
-import os
+All paths are relative to this file (the GitHub repo root). The app scans the
+`data/` and `outputs/` folders for your Module 01-05 files by name pattern, so
+you do not need to hard-code every path. If a file is not found by pattern,
+set an exact path in OVERRIDES below.
+"""
+
+import fnmatch
 import io
-import json
-import zipfile
-import base64
-import warnings
+from datetime import date
 from pathlib import Path
 
+import folium
+import geopandas as gpd
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import streamlit as st
-import rasterio
-import geopandas as gpd
-import folium
-import matplotlib.pyplot as plt
 import plotly.express as px
-import plotly.graph_objects as go
-
+import rasterio
+import streamlit as st
 from rasterio.enums import Resampling
-from rasterio.warp import transform_bounds
+from rasterio.vrt import WarpedVRT
 from streamlit_folium import st_folium
-from matplotlib.colors import Normalize
-
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-# ============================================================
-# 01. PAGE CONFIGURATION
-# ============================================================
 
 st.set_page_config(
-    page_title="TerraVita | Bayad Agricultural Digital Twin",
+    page_title="TerraVita | Bayad Digital Twin",
     page_icon="🌍",
     layout="wide",
-    initial_sidebar_state="expanded"
 )
 
-# ============================================================
-# 02. PROFESSIONAL NAVY / TEAL STYLING
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    .stApp {
-        background: #081522;
-        color: #E8F1F5;
-    }
-    [data-testid="stSidebar"] {
-        background: #0D2030;
-        border-right: 1px solid #18394A;
-    }
-    [data-testid="stHeader"] {
-        background: rgba(8,21,34,0.95);
-    }
-    h1, h2, h3 {
-        color: #F1F7FA !important;
-    }
-    p, label, .stMarkdown {
-        color: #D3E0E7;
-    }
-    div[data-testid="stMetric"] {
-        background: linear-gradient(145deg, #102B3B, #0D2231);
-        border: 1px solid #1C4655;
-        border-radius: 13px;
-        padding: 15px 16px;
-    }
-    div[data-testid="stMetricLabel"] {
-        color: #9CB8C5;
-    }
-    div[data-testid="stMetricValue"] {
-        color: #42D6C5;
-    }
-    .tv-hero {
-        background: linear-gradient(115deg, #102B3B 0%, #0C2635 55%, #103D43 100%);
-        border: 1px solid #1D5660;
-        padding: 26px 30px;
-        border-radius: 18px;
-        margin-bottom: 18px;
-    }
-    .tv-kicker {
-        color: #49D8C7;
-        font-size: 12px;
-        letter-spacing: 2px;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-    .tv-subtitle {
-        color: #B6CCD5;
-        font-size: 14px;
-        line-height: 1.6;
-    }
-    .tv-section {
-        color: #49D8C7;
-        font-weight: 700;
-        letter-spacing: 1px;
-        font-size: 12px;
-        text-transform: uppercase;
-    }
-    .tv-note {
-        background: #102A39;
-        border-left: 4px solid #35BDB0;
-        padding: 12px 16px;
-        border-radius: 8px;
-        color: #D5E7EC;
-        font-size: 13px;
-    }
-    .stDownloadButton button {
-        background: #0D8F87;
-        color: white;
-        border: 0;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-    .stDownloadButton button:hover {
-        background: #12A99D;
-        color: white;
-    }
-    [data-testid="stDataFrame"] {
-        border: 1px solid #1C4655;
-        border-radius: 10px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
+# ----------------------------------------------------------------------------
+# CONFIGURATION
+# ----------------------------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+SEARCH_DIRS = [BASE_DIR / "data", BASE_DIR / "outputs"]
+PROJECT_CRS = "EPSG:32643"          # UTM 43N, suitable for Bayad, Gujarat
+MAX_DIM = 900                        # max preview raster size in pixels
+DEFAULT_CENTER = [23.25, 73.30]      # fallback map centre (Bayad area)
+ESRI_URL = (
+    "https://server.arcgisonline.com/ArcGIS/rest/services/"
+    "World_Imagery/MapServer/tile/{z}/{y}/{x}"
 )
 
-# ============================================================
-# 03. PROJECT PATHS
-# ============================================================
+# Exact paths (relative to repo root) if automatic search picks the wrong file.
+# Example: {"NDVI": "outputs/rasters/bayad_ndvi_2025.tif"}
+OVERRIDES = {}
 
-DEFAULT_PROJECT = "/content/drive/MyDrive/TERRAVITA_BAYAD"
-
-st.sidebar.markdown(
-    """
-    <div style="padding:8px 0 18px 0;">
-      <div style="font-size:12px;letter-spacing:2px;color:#49D8C7;font-weight:800;">
-        TERRAVITA
-      </div>
-      <div style="font-size:21px;font-weight:800;color:#F1F7FA;">
-        AGRI DIGITAL TWIN
-      </div>
-      <div style="font-size:11px;color:#9CB8C5;">
-        BAYAD TALUKA · GUJARAT
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-PROJECT = st.sidebar.text_input(
-    "Google Drive project folder",
-    value=DEFAULT_PROJECT
-).strip()
-
-if not PROJECT:
-    PROJECT = DEFAULT_PROJECT
-
-OUTPUT_02 = os.path.join(PROJECT, "TERRAVITA_MODULE_02")
-OUTPUT_03_TERRAIN = os.path.join(PROJECT, "TERRAVITA_MODULE_03_TERRAIN")
-OUTPUT_03_RAIN = os.path.join(PROJECT, "TERRAVITA_MODULE_03_RAINFALL")
-OUTPUT_04 = os.path.join(PROJECT, "TERRAVITA_MODULE_04", "01_OUTPUTS")
-OUTPUT_05 = os.path.join(PROJECT, "TERRAVITA_MODULE_05", "01_OUTPUTS")
-
-# The boundary path in Module 01 may vary depending on where its
-# outputs were exported. The app checks these known alternatives.
-PATHS = {
-    "boundary": [
-        os.path.join(PROJECT, "01_OUTPUTS", "Bayad_Taluka_2025.geojson"),
-        os.path.join(PROJECT, "01_OUTPUTS", "Bayad_Taluka_2025.gpkg"),
-        os.path.join(PROJECT, "TERRAVITA_MODULE_01", "01_OUTPUTS", "Bayad_Taluka_2025.geojson"),
-        os.path.join(PROJECT, "TERRAVITA_MODULE_01", "01_OUTPUTS", "Bayad_Taluka_2025.gpkg"),
-        os.path.join(PROJECT, "Bayad_Taluka_2025.geojson"),
-    ],
-    "indices": [
-        os.path.join(OUTPUT_02, "Bayad_Kharif_2025_Indices.tif"),
-    ],
-    "terrain": [
-        os.path.join(OUTPUT_03_TERRAIN, "Bayad_SRTM_Terrain_30m.tif"),
-    ],
-    "rainfall": [
-        os.path.join(OUTPUT_03_RAIN, "Bayad_Kharif_2025_Rainfall.tif"),
-        os.path.join(PROJECT, "TERRAVITA_MODULE_03", "Bayad_Kharif_2025_Rainfall.tif"),
-    ],
-    "stress": [
-        os.path.join(OUTPUT_04, "Bayad_Kharif2025_Relative_Stress.tif"),
-    ],
-    "stress_classes": [
-        os.path.join(OUTPUT_04, "Bayad_Kharif2025_Stress_Classes.tif"),
-    ],
-    "clusters": [
-        os.path.join(OUTPUT_04, "Bayad_Kharif2025_GeoAI_Clusters.tif"),
-    ],
-    "drainage_distance": [
-        os.path.join(OUTPUT_04, "Bayad_Kharif2025_Drainage_Distance.tif"),
-    ],
-    "priority": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Priority.tif"),
-    ],
-    "priority_classes": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Priority_Classes.tif"),
-    ],
-    "candidates_gpkg": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Candidates.gpkg"),
-    ],
-    "candidates_csv": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Candidates.csv"),
-    ],
-    "scenario_csv": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Scenario_Results.csv"),
-    ],
-    "statistics_json": [
-        os.path.join(OUTPUT_05, "Bayad_Module05_Statistics.json"),
-    ],
-    "scenario_buffers": [
-        os.path.join(OUTPUT_05, "Bayad_Intervention_Scenario_Buffers.gpkg"),
-    ],
+RASTERS = {
+    "NDVI": dict(patterns=["*ndvi*.tif", "*ndvi*.tiff"], cmap="RdYlGn"),
+    "NDWI": dict(patterns=["*ndwi*.tif", "*ndwi*.tiff"], exclude=["mndwi"], cmap="Blues"),
+    "MNDWI": dict(patterns=["*mndwi*.tif", "*mndwi*.tiff"], cmap="GnBu"),
+    "NDMI": dict(patterns=["*ndmi*.tif", "*ndmi*.tiff"], cmap="YlGnBu"),
+    "Agricultural Stress": dict(patterns=["*stress*.tif", "*stress*.tiff"], cmap="YlOrRd"),
+    "GeoAI Clusters": dict(
+        patterns=["*cluster*.tif", "*kmeans*.tif", "*geoai*.tif"], cmap="tab10", categorical=True
+    ),
+    "Intervention Priority": dict(patterns=["*priority*.tif"], cmap="magma"),
+    "Elevation": dict(patterns=["*srtm*.tif", "*dem*.tif", "*elevation*.tif"], cmap="terrain"),
+    "Slope": dict(patterns=["*slope*.tif"], cmap="viridis"),
+    "Rainfall": dict(patterns=["*chirps*.tif", "*rainfall*.tif", "*rain*.tif"], cmap="Blues"),
 }
 
-def resolve_path(key):
-    for candidate in PATHS.get(key, []):
-        if os.path.exists(candidate):
-            return candidate
+VECTORS = {
+    "AOI Boundary": ["*boundary*.gpkg", "*aoi*.gpkg", "*boundary*.geojson", "*aoi*.geojson",
+                     "*boundary*.shp", "*aoi*.shp", "*bayad*.gpkg"],
+    "Intervention Candidates": ["*candidate*.gpkg", "*candidate*.geojson", "*candidate*.shp",
+                                "*candidate*.csv"],
+    "Scenario Buffers": ["*buffer*.gpkg", "*buffer*.geojson", "*scenario*.gpkg"],
+}
+
+TABLES = {
+    "Scenario Summary": ["*scenario*summary*.csv", "*scenario*.csv", "*coverage*.csv"],
+    "Stress Summary": ["*stress*summary*.csv", "*stress*.csv"],
+    "Cluster Summary": ["*cluster*summary*.csv", "*cluster*.csv"],
+}
+
+INDEX_NAMES = ["NDVI", "NDWI", "MNDWI", "NDMI"]
+
+# ----------------------------------------------------------------------------
+# STYLE
+# ----------------------------------------------------------------------------
+st.markdown(
+    """
+<style>
+.stApp { background:#081522; color:#edf5f7; }
+section[data-testid="stSidebar"] { background:#0b1d2b; border-right:1px solid #244657; }
+div[data-testid="stMetric"] { background:#102738; border:1px solid #244657;
+    padding:14px 16px; border-radius:12px; }
+div[data-testid="stMetricLabel"] { color:#a8bdc7; }
+div[data-testid="stMetricValue"] { color:#35c6b5; }
+h1, h2, h3 { color:#edf5f7; }
+.tv-hero { background:linear-gradient(135deg,#0a1c2b,#102f40); border:1px solid #244657;
+    border-radius:14px; padding:26px 30px; margin-bottom:20px; }
+.tv-hero .eyebrow { color:#35c6b5; font-size:12px; letter-spacing:3px; font-weight:bold; }
+.tv-hero h1 { margin:8px 0 6px; font-size:30px; }
+.tv-hero p { color:#a8bdc7; margin:0; }
+.tv-note { background:#102738; border-left:4px solid #35c6b5; padding:10px 14px;
+    border-radius:6px; color:#a8bdc7; font-size:14px; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+# ----------------------------------------------------------------------------
+# FILE DISCOVERY
+# ----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def list_files():
+    files = []
+    for d in SEARCH_DIRS:
+        if d.exists():
+            files += [p for p in d.rglob("*") if p.is_file()]
+    return sorted(files)
+
+
+def locate(name, patterns, exclude=()):
+    override = OVERRIDES.get(name)
+    if override:
+        p = BASE_DIR / override
+        return p if p.exists() else None
+    files = list_files()
+    for pat in patterns:
+        for p in files:
+            n = p.name.lower()
+            if any(e in n for e in exclude):
+                continue
+            if fnmatch.fnmatch(n, pat):
+                return p
     return None
 
-RESOLVED = {key: resolve_path(key) for key in PATHS}
-
-# ============================================================
-# 04. CACHED DATA LOADERS
-# ============================================================
 
 @st.cache_data(show_spinner=False)
-def load_boundary(path):
-    gdf = gpd.read_file(path)
-    if gdf.empty:
-        raise ValueError("Boundary file contains no features.")
-    if gdf.crs is None:
-        raise ValueError("Boundary file has no CRS defined.")
-    if not gdf.geometry.notna().any():
-        raise ValueError("Boundary file has no valid geometries.")
-    gdf = gdf[gdf.geometry.notna()].copy()
-    gdf = gdf[gdf.geometry.is_valid | gdf.geometry.notna()].copy()
-    return gdf
+def discover():
+    found = {}
+    for n, c in RASTERS.items():
+        found[n] = locate(n, c["patterns"], c.get("exclude", ()))
+    for n, pats in VECTORS.items():
+        found[n] = locate(n, pats)
+    for n, pats in TABLES.items():
+        found[n] = locate(n, pats)
+    return found
 
+
+ds = discover()
+
+
+def rel(p):
+    try:
+        return str(p.relative_to(BASE_DIR))
+    except Exception:
+        return str(p)
+
+
+# ----------------------------------------------------------------------------
+# RASTER HELPERS (validation, reading, rendering)
+# ----------------------------------------------------------------------------
 @st.cache_data(show_spinner=False)
-def read_raster_preview(path, band=1, max_size=1000):
-    with rasterio.open(path) as src:
-        if src.count < band:
-            raise ValueError(
-                f"Raster has {src.count} band(s), but band {band} was requested."
+def validate_raster(path_str):
+    info = {"ok": False, "errors": [], "warnings": []}
+    try:
+        with rasterio.open(path_str) as src:
+            info.update(
+                width=src.width, height=src.height, bands=src.count,
+                crs=str(src.crs) if src.crs else None, nodata=src.nodata,
+                dtype=src.dtypes[0],
             )
-        if src.crs is None:
-            raise ValueError("Raster CRS is missing.")
-        if src.width < 1 or src.height < 1:
-            raise ValueError("Raster has invalid dimensions.")
-
-        scale = min(1.0, max_size / max(src.width, src.height))
-        out_width = max(1, int(src.width * scale))
-        out_height = max(1, int(src.height * scale))
-
-        arr = src.read(
-            band,
-            out_shape=(out_height, out_width),
-            masked=True,
-            resampling=Resampling.nearest if band in [5] else Resampling.bilinear
-        ).astype("float32")
-
-        arr = np.asarray(arr.filled(np.nan), dtype="float32")
-
-        if src.nodata is not None:
-            arr[arr == src.nodata] = np.nan
-
-        bounds = transform_bounds(
-            src.crs,
-            "EPSG:4326",
-            *src.bounds,
-            densify_pts=21
-        )
-
-        meta = {
-            "width": src.width,
-            "height": src.height,
-            "count": src.count,
-            "crs": str(src.crs),
-            "bounds": tuple(float(x) for x in bounds),
-            "nodata": src.nodata,
-            "dtype": src.dtypes[band - 1],
-            "transform": tuple(src.transform),
-            "descriptions": list(src.descriptions),
-        }
-
-    finite = arr[np.isfinite(arr)]
-    if finite.size == 0:
-        raise ValueError("Raster band contains no valid pixels.")
-
-    return arr, meta
-
-@st.cache_data(show_spinner=False)
-def load_table(path):
-    return pd.read_csv(path)
-
-@st.cache_data(show_spinner=False)
-def load_json(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-@st.cache_data(show_spinner=False)
-def load_vector(path, layer=None):
-    gdf = gpd.read_file(path, layer=layer) if layer else gpd.read_file(path)
-    if gdf.empty:
-        raise ValueError("Vector file contains no features.")
-    if gdf.crs is None:
-        raise ValueError("Vector file CRS is missing.")
-    return gdf
-
-# ============================================================
-# 05. DATA AVAILABILITY AND VALIDATION
-# ============================================================
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("### Data availability")
-
-for key, path in RESOLVED.items():
-    if path:
-        st.sidebar.success(f"{key.replace('_', ' ').title()}: ready")
-    else:
-        st.sidebar.warning(f"{key.replace('_', ' ').title()}: not found")
-
-def safe_boundary():
-    path = RESOLVED["boundary"]
-    if not path:
-        return None, "Boundary file not found."
-    try:
-        return load_boundary(path), None
+            if src.crs is None:
+                info["errors"].append("No CRS defined")
+            if src.count < 1 or src.width < 1 or src.height < 1:
+                info["errors"].append("Empty raster")
+            if src.count > 1:
+                info["warnings"].append(f"{src.count} bands found; band 1 is used")
+            if src.nodata is None:
+                info["warnings"].append("No nodata value set")
+            if not info["errors"]:
+                step = max(1, int(max(src.width, src.height) / 600))
+                arr = src.read(
+                    1,
+                    out_shape=(max(1, src.height // step), max(1, src.width // step)),
+                    masked=True,
+                )
+                data = np.ma.filled(arr.astype("float64"), np.nan)
+                finite = data[np.isfinite(data)]
+                info["valid_pct"] = round(100 * finite.size / data.size, 1)
+                if finite.size == 0:
+                    info["errors"].append("No valid pixels (all nodata/NaN)")
+                else:
+                    info["min"], info["max"] = float(finite.min()), float(finite.max())
+                    info["mean"] = float(finite.mean())
+                    if finite.min() == finite.max():
+                        info["warnings"].append("All valid pixels have the same value")
+                    if info["valid_pct"] < 20:
+                        info["warnings"].append("Less than 20% valid pixels")
     except Exception as e:
-        return None, str(e)
+        info["errors"].append(f"Cannot open raster: {e}")
+    info["ok"] = not info["errors"]
+    return info
 
-def safe_raster(key, band=1):
-    path = RESOLVED.get(key)
-    if not path:
-        return None, None, f"{key} raster not found."
-    try:
-        arr, meta = read_raster_preview(path, band=band)
-        return arr, meta, None
-    except Exception as e:
-        return None, None, str(e)
 
-def safe_vector(key):
-    path = RESOLVED.get(key)
-    if not path:
-        return None, f"{key} vector file not found."
-    try:
-        return load_vector(path), None
-    except Exception as e:
-        return None, str(e)
+@st.cache_data(show_spinner="Reading raster...")
+def read_raster(path_str, categorical=False):
+    res = Resampling.nearest if categorical else Resampling.bilinear
+    with rasterio.open(path_str) as src:
+        with WarpedVRT(src, crs="EPSG:4326", resampling=res) as vrt:
+            scale = max(1.0, max(vrt.width, vrt.height) / MAX_DIM)
+            h, w = max(1, int(vrt.height / scale)), max(1, int(vrt.width / scale))
+            arr = vrt.read(1, out_shape=(h, w), masked=True, resampling=res)
+            b = vrt.bounds
+    data = np.ma.filled(arr.astype("float64"), np.nan)
+    return data, (float(b.left), float(b.bottom), float(b.right), float(b.top))
 
-def safe_csv(key):
-    path = RESOLVED.get(key)
-    if not path:
-        return None, f"{key} CSV not found."
-    try:
-        return load_table(path), None
-    except Exception as e:
-        return None, str(e)
 
-def safe_json(key):
-    path = RESOLVED.get(key)
-    if not path:
-        return None, f"{key} JSON not found."
-    try:
-        return load_json(path), None
-    except Exception as e:
-        return None, str(e)
-
-boundary, boundary_error = safe_boundary()
-
-# ============================================================
-# 06. GENERAL HELPERS
-# ============================================================
-
-def finite_stats(arr):
-    values = arr[np.isfinite(arr)]
-    if values.size == 0:
+def get_raster(name, quiet=False):
+    p = ds.get(name)
+    if p is None:
+        if not quiet:
+            st.warning(f"**{name}**: file not found in `data/` or `outputs/`.")
         return None
+    v = validate_raster(str(p))
+    if not v["ok"]:
+        if not quiet:
+            st.error(f"**{name}** (`{rel(p)}`): " + "; ".join(v["errors"]))
+        return None
+    try:
+        return read_raster(str(p), RASTERS[name].get("categorical", False))
+    except Exception as e:
+        if not quiet:
+            st.error(f"**{name}**: could not read raster ({e})")
+        return None
+
+
+def to_rgba(data, cmap_name, categorical=False):
+    valid = np.isfinite(data)
+    out = np.zeros(data.shape + (4,), dtype=np.uint8)
+    if not valid.any():
+        return out
+    cm = matplotlib.colormaps[cmap_name]
+    if categorical:
+        idx = np.where(valid, data, 0).astype(int) % 10
+        rgba = cm(idx)
+    else:
+        lo, hi = np.nanpercentile(data[valid], [2, 98])
+        if hi <= lo:
+            hi = lo + 1e-9
+        norm = np.clip((np.nan_to_num(data, nan=lo) - lo) / (hi - lo), 0, 1)
+        rgba = cm(norm)
+    out = (rgba * 255).astype(np.uint8)
+    out[~valid, 3] = 0
+    return out
+
+
+def raster_figure(name, data, bounds, title=None):
+    cfg = RASTERS[name]
+    cat = cfg.get("categorical", False)
+    left, bottom, right, top = bounds
+    fig, ax = plt.subplots(figsize=(7, 6))
+    fig.patch.set_facecolor("#081522")
+    ax.set_facecolor("#081522")
+    if cat:
+        vals = np.unique(data[np.isfinite(data)]).astype(int)
+        ax.imshow(to_rgba(data, "tab10", True), extent=(left, right, bottom, top))
+        cm = matplotlib.colormaps["tab10"]
+        handles = [plt.Rectangle((0, 0), 1, 1, color=cm(int(v) % 10)) for v in vals]
+        ax.legend(handles, [f"Cluster {v}" for v in vals], loc="lower right", fontsize=8)
+    else:
+        lo, hi = np.nanpercentile(data[np.isfinite(data)], [2, 98])
+        im = ax.imshow(data, extent=(left, right, bottom, top), cmap=cfg["cmap"],
+                       vmin=lo, vmax=hi if hi > lo else lo + 1e-9)
+        cb = fig.colorbar(im, ax=ax, shrink=0.8)
+        cb.ax.tick_params(colors="#a8bdc7")
+    ax.set_aspect(1 / np.cos(np.radians((top + bottom) / 2)))
+    ax.set_title(title or name, color="#edf5f7")
+    ax.tick_params(colors="#a8bdc7", labelsize=8)
+    ax.set_xlabel("Longitude", color="#a8bdc7")
+    ax.set_ylabel("Latitude", color="#a8bdc7")
+    return fig
+
+
+def stats_of(data):
+    v = data[np.isfinite(data)]
+    if v.size == 0:
+        return {}
     return {
-        "min": float(np.nanmin(values)),
-        "max": float(np.nanmax(values)),
-        "mean": float(np.nanmean(values)),
-        "median": float(np.nanmedian(values)),
-        "valid_pixels": int(values.size)
+        "Min": v.min(), "P25": np.percentile(v, 25), "Median": np.median(v),
+        "Mean": v.mean(), "P75": np.percentile(v, 75), "Max": v.max(), "Std": v.std(),
     }
 
-def format_number(value, digits=2):
-    if value is None or not np.isfinite(value):
-        return "N/A"
-    return f"{value:,.{digits}f}"
 
-def raster_image_data_uri(arr, cmap="viridis", vmin=None, vmax=None):
-    finite = arr[np.isfinite(arr)]
-    if finite.size == 0:
+# ----------------------------------------------------------------------------
+# VECTOR / TABLE HELPERS
+# ----------------------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def load_vector(path_str):
+    p = Path(path_str)
+    if p.suffix.lower() == ".csv":
+        df = pd.read_csv(p)
+        low = {c.lower(): c for c in df.columns}
+        lat = next((low[k] for k in ("lat", "latitude", "y") if k in low), None)
+        lon = next((low[k] for k in ("lon", "lng", "longitude", "x") if k in low), None)
+        if lat is None or lon is None:
+            raise ValueError("CSV has no lat/lon columns")
+        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df[lon], df[lat]), crs="EPSG:4326")
+    else:
+        gdf = gpd.read_file(p)
+    if gdf.empty:
+        raise ValueError("Layer is empty")
+    if gdf.crs is None:
+        gdf = gdf.set_crs("EPSG:4326")
+    return gdf
+
+
+def get_vector(name, quiet=False):
+    p = ds.get(name)
+    if p is None:
+        if not quiet:
+            st.warning(f"**{name}**: file not found in `data/` or `outputs/`.")
+        return None
+    try:
+        return load_vector(str(p))
+    except Exception as e:
+        if not quiet:
+            st.error(f"**{name}** (`{rel(p)}`): {e}")
         return None
 
-    if vmin is None:
-        vmin = float(np.nanpercentile(finite, 2))
-    if vmax is None:
-        vmax = float(np.nanpercentile(finite, 98))
-    if vmax <= vmin:
-        vmax = vmin + 1e-6
 
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=120)
-    ax.imshow(arr, cmap=cmap, vmin=vmin, vmax=vmax)
-    ax.axis("off")
-    fig.subplots_adjust(0, 0, 1, 1)
+@st.cache_data(show_spinner=False)
+def load_table(path_str):
+    return pd.read_csv(path_str)
 
-    buffer = io.BytesIO()
-    fig.savefig(
-        buffer,
-        format="png",
-        transparent=True,
-        bbox_inches="tight",
-        pad_inches=0
-    )
-    plt.close(fig)
 
-    encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    return f"data:image/png;base64,{encoded}"
+def get_table(name, quiet=False):
+    p = ds.get(name)
+    if p is None:
+        if not quiet:
+            st.info(f"**{name}**: no CSV found.")
+        return None
+    try:
+        return load_table(str(p))
+    except Exception as e:
+        if not quiet:
+            st.error(f"**{name}** (`{rel(p)}`): {e}")
+        return None
 
-def add_raster_overlay(map_object, arr, meta, name, cmap="viridis", opacity=0.65):
-    west, south, east, north = meta["bounds"]
-    image_uri = raster_image_data_uri(arr, cmap=cmap)
-    if image_uri:
-        folium.raster_layers.ImageOverlay(
-            image=image_uri,
-            bounds=[[south, west], [north, east]],
-            opacity=opacity,
-            name=name,
-            interactive=True,
-            cross_origin=False,
-            zindex=2
-        ).add_to(map_object)
 
-def make_base_map(boundary_gdf=None, zoom=10):
-    if boundary_gdf is not None and not boundary_gdf.empty:
-        b = boundary_gdf.to_crs("EPSG:4326")
-        centroid = b.geometry.union_all().centroid
-        center = [centroid.y, centroid.x]
-    else:
-        center = [23.42, 73.28]
+def union(geoseries):
+    fn = getattr(geoseries, "union_all", None)
+    return fn() if fn else geoseries.unary_union
 
-    m = folium.Map(
-        location=center,
-        zoom_start=zoom,
-        tiles="CartoDB positron",
-        control_scale=True
-    )
 
-    if boundary_gdf is not None and not boundary_gdf.empty:
-        b = boundary_gdf.to_crs("EPSG:4326")
+def geom_only(gdf, simplify=None):
+    g = gdf[["geometry"]].to_crs("EPSG:4326")
+    if simplify:
+        g["geometry"] = g.geometry.simplify(simplify)
+    return g
+
+
+# ----------------------------------------------------------------------------
+# MAP HELPERS
+# ----------------------------------------------------------------------------
+def new_map(aoi=None, tiles="OpenStreetMap"):
+    center, zoom = DEFAULT_CENTER, 10
+    if aoi is not None:
+        b = aoi.to_crs("EPSG:4326").total_bounds
+        center = [(b[1] + b[3]) / 2, (b[0] + b[2]) / 2]
+    m = folium.Map(location=center, zoom_start=zoom, tiles=None, control_scale=True)
+    folium.TileLayer("OpenStreetMap", name="OpenStreetMap", show=tiles == "OpenStreetMap").add_to(m)
+    folium.TileLayer(tiles=ESRI_URL, attr="Esri World Imagery", name="Satellite (Esri)",
+                     show=tiles != "OpenStreetMap").add_to(m)
+    if aoi is not None:
+        b = aoi.to_crs("EPSG:4326").total_bounds
+        m.fit_bounds([[b[1], b[0]], [b[3], b[2]]])
         folium.GeoJson(
-            b,
-            name="Bayad Taluka boundary",
-            style_function=lambda feature: {
-                "color": "#28C7B7",
-                "weight": 3,
-                "fillColor": "#28C7B7",
-                "fillOpacity": 0.05
-            },
-            tooltip=folium.GeoJsonTooltip(
-                fields=[
-                    c for c in ["NAME", "District", "Sub_dist"]
-                    if c in b.columns
-                ]
-            ) if any(c in b.columns for c in ["NAME", "District", "Sub_dist"]) else None
+            geom_only(aoi, 0.0002).to_json(), name="AOI boundary",
+            style_function=lambda x: {"color": "#35c6b5", "weight": 2, "fillOpacity": 0},
         ).add_to(m)
-
     return m
 
-def show_map(m, height=600):
+
+def add_raster(m, name, opacity=0.75):
+    r = get_raster(name)
+    if r is None:
+        return False
+    data, (left, bottom, right, top) = r
+    cfg = RASTERS[name]
+    rgba = to_rgba(data, cfg["cmap"], cfg.get("categorical", False))
+    folium.raster_layers.ImageOverlay(
+        image=rgba, bounds=[[bottom, left], [top, right]], opacity=opacity,
+        name=name, show=True,
+    ).add_to(m)
+    return True
+
+
+def add_points(m, gdf, name="Intervention candidates", limit=500):
+    g = gdf.copy()
+    g["geometry"] = g.geometry.representative_point()
+    g = g.to_crs("EPSG:4326").head(limit)
+    cols = [c for c in g.columns if c != "geometry"][:4]
+    fg = folium.FeatureGroup(name=name)
+    for _, row in g.iterrows():
+        tip = "<br>".join(f"{c}: {row[c]}" for c in cols) or name
+        folium.CircleMarker(
+            [row.geometry.y, row.geometry.x], radius=5, color="#ffd166",
+            fill=True, fill_opacity=0.85, tooltip=tip,
+        ).add_to(fg)
+    fg.add_to(m)
+
+
+def show_map(m, height=620):
     folium.LayerControl(collapsed=False).add_to(m)
-    st_folium(
-        m,
-        width=None,
-        height=height,
-        returned_objects=[]
-    )
+    st_folium(m, height=height, use_container_width=True, returned_objects=[])
 
-def make_pdf_report(summary, scenario_df=None):
-    from matplotlib.backends.backend_pdf import PdfPages
 
-    pdf_buffer = io.BytesIO()
-
-    with PdfPages(pdf_buffer) as pdf:
-        fig = plt.figure(figsize=(8.27, 11.69))
-        fig.patch.set_facecolor("white")
-        plt.axis("off")
-
-        lines = [
-            "TERRAVITA ENVIRONMENTAL & GEOSPATIAL CONSULTANCY",
-            "",
-            "BAYAD AGRICULTURAL DIGITAL TWIN",
-            "Module 06 | Interactive Decision-Support Dashboard",
-            "",
-            "Study area: Bayad Taluka, Aravalli, Gujarat, India",
-            "",
-            "PROJECT SUMMARY",
-            "This report summarizes available outputs from Modules 01–05.",
-            "",
-        ]
-
-        for key, value in summary.items():
-            lines.append(f"{key.replace('_', ' ').title()}: {value}")
-
-        lines += [
-            "",
-            "INTERPRETATION AND LIMITATIONS",
-            "Priority scores are screening indicators based on the configured",
-            "weighted overlay. Scenario coverage measures spatial overlap of",
-            "candidate buffers with high-priority pixels. It does not estimate",
-            "groundwater recharge, water storage, crop-yield gains, or measured",
-            "intervention effectiveness.",
-            "",
-            "Candidate locations require field, land-access, soil, geology,",
-            "hydrogeology and engineering validation before implementation.",
-            "",
-            "Prepared using the TerraVita Bayad project data available",
-            "at the time this dashboard was run."
-        ]
-
-        y = 0.95
-        for i, line in enumerate(lines):
-            fontsize = 15 if i in [0, 2, 7] else 10
-            weight = "bold" if i in [0, 2, 7] else "normal"
-            fig.text(
-                0.09, y, line,
-                fontsize=fontsize,
-                fontweight=weight,
-                color="#102B3B"
-            )
-            y -= 0.035 if line else 0.02
-
-        pdf.savefig(fig, bbox_inches="tight")
-        plt.close(fig)
-
-        if scenario_df is not None and not scenario_df.empty:
-            fig, ax = plt.subplots(figsize=(8.27, 5.5))
-            ax.bar(
-                scenario_df["scenario_radius_m"].astype(str),
-                scenario_df["coverage_percent"]
-            )
-            ax.set_title("Intervention Scenario Coverage")
-            ax.set_xlabel("Buffer radius (m)")
-            ax.set_ylabel("High-priority pixel coverage (%)")
-            ax.grid(axis="y", alpha=0.25)
-            pdf.savefig(fig, bbox_inches="tight")
-            plt.close(fig)
-
-    pdf_buffer.seek(0)
-    return pdf_buffer.getvalue()
-
-# ============================================================
-# 07. HEADER
-# ============================================================
-
-st.markdown(
-    """
-    <div class="tv-hero">
-      <div class="tv-kicker">TERRAVITA · GEOSPATIAL INTELLIGENCE</div>
-      <h1 style="margin:8px 0 6px 0;font-size:30px;">
-        Agricultural Digital Twin
-      </h1>
-      <div style="font-size:16px;color:#D8E9EE;font-weight:600;">
-        Watershed Resilience & Agricultural Stress Intelligence
-      </div>
-      <div class="tv-subtitle" style="margin-top:10px;">
-        Bayad Taluka · Aravalli District · Gujarat, India
-        <br>
-        Satellite Remote Sensing · GIS · GeoAI · Intervention Scenario Screening
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-# ============================================================
-# 08. NAVIGATION
-# ============================================================
-
-PAGES = [
-    "Overview",
-    "GIS Map",
-    "Satellite Indices",
-    "Agricultural Stress",
-    "GeoAI Clusters",
-    "Digital Twin Scenarios",
-    "Reports & Downloads",
-    "Data Quality"
-]
-
-page = st.sidebar.radio("DASHBOARD NAVIGATION", PAGES)
-
-st.sidebar.markdown("---")
-st.sidebar.caption("TerraVita | Satellite + GIS + AI")
-st.sidebar.caption("Analytical prototype · Not a live sensor system")
-
-# ============================================================
-# 09. OVERVIEW
-# ============================================================
-
-if page == "Overview":
-
-    st.markdown('<div class="tv-section">01 / Project overview</div>', unsafe_allow_html=True)
-    st.header("Bayad Taluka Monitoring Overview")
-
-    if boundary is None:
-        st.warning(f"Boundary unavailable: {boundary_error}")
-
-    stress_arr, stress_meta, stress_err = safe_raster("stress")
-    priority_arr, priority_meta, priority_err = safe_raster("priority")
-    candidate_gdf, candidate_err = safe_vector("candidates_gpkg")
-    stats_json, stats_err = safe_json("statistics_json")
-
-    stress_stats = finite_stats(stress_arr) if stress_arr is not None else None
-    priority_stats = finite_stats(priority_arr) if priority_arr is not None else None
-
-    area_km2 = None
-    if boundary is not None:
+# ----------------------------------------------------------------------------
+# KPIs AND REPORTS
+# ----------------------------------------------------------------------------
+def compute_kpis():
+    k = {"Layers found": f"{sum(v is not None for v in ds.values())} of {len(ds)}"}
+    aoi = get_vector("AOI Boundary", quiet=True)
+    if aoi is not None:
         try:
-            area_km2 = float(
-                boundary.to_crs("EPSG:32643").geometry.area.sum() / 1e6
-            )
-        except Exception:
-            area_km2 = None
-
-    candidate_count = (
-        len(candidate_gdf)
-        if candidate_gdf is not None else
-        (stats_json.get("candidate_count") if stats_json else None)
-    )
-
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Study area", f"{area_km2:,.1f} km²" if area_km2 else "N/A")
-    k2.metric(
-        "Mean relative stress",
-        format_number(stress_stats["mean"]) if stress_stats else "N/A"
-    )
-    k3.metric(
-        "Mean priority score",
-        format_number(priority_stats["mean"]) if priority_stats else "N/A"
-    )
-    k4.metric(
-        "Candidate locations",
-        f"{candidate_count:,}" if candidate_count is not None else "N/A"
-    )
-
-    st.markdown("### Project workflow")
-    cols = st.columns(5)
-    modules = [
-        ("01", "AOI verification", "Boundary"),
-        ("02", "Satellite indices", "NDVI · NDWI · NDMI"),
-        ("03", "Rainfall & terrain", "CHIRPS · SRTM"),
-        ("04", "Stress & GeoAI", "Stress · KMeans"),
-        ("05", "Digital Twin", "Priority · Scenarios")
-    ]
-    for col, item in zip(cols, modules):
-        with col:
-            st.markdown(
-                f"""
-                <div style="background:#102A39;border:1px solid #1C4655;
-                border-radius:12px;padding:14px;min-height:120px;">
-                  <div style="color:#49D8C7;font-size:20px;font-weight:800;">{item[0]}</div>
-                  <div style="font-weight:700;color:#F1F7FA;margin-top:6px;">{item[1]}</div>
-                  <div style="font-size:11px;color:#9CB8C5;margin-top:6px;">{item[2]}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-    st.markdown("### Priority screening map")
-    if priority_arr is not None and priority_meta is not None:
-        m = make_base_map(boundary)
-        add_raster_overlay(
-            m, priority_arr, priority_meta,
-            "Intervention priority score", cmap="YlOrRd", opacity=0.72
-        )
-        if candidate_gdf is not None:
-            cg = candidate_gdf.to_crs("EPSG:4326")
-            for _, row in cg.iterrows():
-                folium.CircleMarker(
-                    [row.geometry.y, row.geometry.x],
-                    radius=5,
-                    color="#0B6B63",
-                    fill=True,
-                    fill_opacity=0.95,
-                    tooltip=str(row.get("candidate_id", "Candidate"))
-                ).add_to(m)
-        show_map(m, 560)
-    else:
-        st.info(f"Priority raster unavailable: {priority_err}")
-
-    st.markdown(
-        """
-        <div class="tv-note">
-        This dashboard presents a spatial screening prototype using the available
-        Module 01–05 outputs. It is not a real-time sensor-connected or physically
-        calibrated watershed simulation.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# ============================================================
-# 10. GIS MAP
-# ============================================================
-
-elif page == "GIS Map":
-
-    st.markdown('<div class="tv-section">02 / Spatial intelligence</div>', unsafe_allow_html=True)
-    st.header("Interactive GIS Map")
-
-    if boundary is None:
-        st.error(f"Boundary cannot be loaded: {boundary_error}")
-    else:
-        raster_options = {
-            "Intervention priority": ("priority", 1, "YlOrRd"),
-            "Relative agricultural stress": ("stress", 1, "YlOrRd"),
-            "Stress classes": ("stress_classes", 1, "Set1"),
-            "GeoAI clusters": ("clusters", 1, "tab10"),
-            "Terrain elevation": ("terrain", 1, "terrain"),
-            "Terrain slope": ("terrain", 2, "magma"),
-            "Drainage distance": ("drainage_distance", 1, "Blues"),
-        }
-
-        available = []
-        for label, (key, band, cmap) in raster_options.items():
-            if RESOLVED.get(key):
-                available.append(label)
-
-        selected_layer = st.selectbox(
-            "Select map layer",
-            ["Boundary only"] + available
-        )
-
-        m = make_base_map(boundary, zoom=10)
-
-        if selected_layer != "Boundary only":
-            key, band, cmap = raster_options[selected_layer]
-            arr, meta, err = safe_raster(key, band)
-            if arr is not None:
-                add_raster_overlay(
-                    m, arr, meta, selected_layer, cmap=cmap, opacity=0.68
-                )
-            else:
-                st.warning(err)
-
-        candidates, candidates_error = safe_vector("candidates_gpkg")
-        if candidates is not None:
-            candidates = candidates.to_crs("EPSG:4326")
-            for _, row in candidates.iterrows():
-                popup = (
-                    f"Candidate: {row.get('candidate_id', 'N/A')}<br>"
-                    f"Rank: {row.get('priority_rank', 'N/A')}<br>"
-                    f"Score: {row.get('priority_score', 'N/A')}"
-                )
-                folium.Marker(
-                    [row.geometry.y, row.geometry.x],
-                    tooltip=str(row.get("candidate_id", "Candidate")),
-                    popup=folium.Popup(popup, max_width=280),
-                    icon=folium.Icon(color="green", icon="info-sign")
-                ).add_to(m)
-
-        buffers, buffer_error = safe_vector("scenario_buffers")
-        if buffers is not None:
-            buffers = buffers.to_crs("EPSG:4326")
-            radius_values = sorted(
-                [v for v in buffers["radius_m"].dropna().unique()]
-            ) if "radius_m" in buffers.columns else []
-            selected_radius = st.selectbox(
-                "Scenario buffer radius",
-                ["All"] + [str(int(v)) for v in radius_values],
-                key="map_radius"
-            )
-            if selected_radius != "All" and "radius_m" in buffers.columns:
-                buffers = buffers[
-                    buffers["radius_m"] == int(selected_radius)
-                ]
-            folium.GeoJson(
-                buffers,
-                name="Intervention buffers",
-                style_function=lambda feature: {
-                    "color": "#E5A84B",
-                    "weight": 1.5,
-                    "fillColor": "#E5A84B",
-                    "fillOpacity": 0.10
-                }
-            ).add_to(m)
-
-        show_map(m, 650)
-
-# ============================================================
-# 11. SATELLITE INDICES
-# ============================================================
-
-elif page == "Satellite Indices":
-
-    st.markdown('<div class="tv-section">03 / Earth observation</div>', unsafe_allow_html=True)
-    st.header("Satellite Indicator Explorer")
-
-    indices_path = RESOLVED["indices"]
-
-    if not indices_path:
-        st.error("Sentinel-2 index raster not found.")
-        st.code(os.path.join(OUTPUT_02, "Bayad_Kharif_2025_Indices.tif"))
-    else:
-        with rasterio.open(indices_path) as src:
-            band_count = src.count
-            descriptions = list(src.descriptions)
-
-        band_names = {
-            1: "NDVI",
-            2: "NDWI",
-            3: "MNDWI",
-            4: "NDMI",
-            5: "Valid observations"
-        }
-
-        options = {
-            f"Band {i} – {band_names.get(i, 'Unknown')}"
-            + (f" ({descriptions[i-1]})" if descriptions[i-1] else ""): i
-            for i in range(1, band_count + 1)
-        }
-
-        selected = st.selectbox(
-            "Select satellite indicator",
-            list(options.keys())
-        )
-        band = options[selected]
-
-        arr, meta, err = safe_raster("indices", band)
-
-        if arr is None:
-            st.error(err)
-        else:
-            stats = finite_stats(arr)
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Minimum", format_number(stats["min"], 3))
-            c2.metric("Maximum", format_number(stats["max"], 3))
-            c3.metric("Mean", format_number(stats["mean"], 3))
-            c4.metric("Valid pixels", f"{stats['valid_pixels']:,}")
-
-            cmap = "viridis"
-            if band == 1:
-                cmap = "RdYlGn"
-            elif band in [2, 3, 4]:
-                cmap = "BrBG"
-            elif band == 5:
-                cmap = "Blues"
-
-            fig, ax = plt.subplots(figsize=(10, 6))
-            image = ax.imshow(arr, cmap=cmap)
-            ax.set_title(selected)
-            ax.axis("off")
-            fig.colorbar(image, ax=ax, shrink=0.75)
-            st.pyplot(fig, use_container_width=True)
-            plt.close(fig)
-
-            st.caption(
-                f"Source: {os.path.basename(indices_path)} | "
-                f"CRS: {meta['crs']} | "
-                f"Original dimensions: {meta['width']} × {meta['height']}"
-            )
-
-            st.markdown(
-                """
-                <div class="tv-note">
-                NDVI represents vegetation greenness; NDWI/MNDWI are spectral
-                water indicators; NDMI is a vegetation moisture-related index.
-                These indices are not direct measurements of crop yield,
-                groundwater level or field soil moisture.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-# ============================================================
-# 12. AGRICULTURAL STRESS
-# ============================================================
-
-elif page == "Agricultural Stress":
-
-    st.markdown('<div class="tv-section">04 / Agricultural condition</div>', unsafe_allow_html=True)
-    st.header("Agricultural Stress Screening")
-
-    stress_arr, stress_meta, stress_err = safe_raster("stress")
-    classes_arr, classes_meta, classes_err = safe_raster("stress_classes")
-
-    if stress_arr is None:
-        st.error(stress_err)
-    else:
-        stats = finite_stats(stress_arr)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Mean relative stress", format_number(stats["mean"], 3))
-        c2.metric("Median relative stress", format_number(stats["median"], 3))
-        c3.metric("Valid pixels", f"{stats['valid_pixels']:,}")
-
-        tab1, tab2 = st.tabs(["Relative stress", "Stress classes"])
-
-        with tab1:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            im = ax.imshow(stress_arr, cmap="YlOrRd", vmin=0, vmax=1)
-            ax.set_title("Kharif 2025 – Relative Agricultural Stress")
-            ax.axis("off")
-            fig.colorbar(im, ax=ax, label="Relative stress score")
-            st.pyplot(fig, use_container_width=True)
-            plt.close(fig)
-
-        with tab2:
-            if classes_arr is None:
-                st.info(classes_err)
-            else:
-                vals, counts = np.unique(
-                    classes_arr[np.isfinite(classes_arr)],
-                    return_counts=True
-                )
-                class_df = pd.DataFrame({
-                    "Class code": vals.astype(int),
-                    "Pixel count": counts
-                })
-                class_labels = {
-                    1: "Lower relative stress",
-                    2: "Moderate relative stress",
-                    3: "Elevated relative stress",
-                    4: "Higher relative stress"
-                }
-                class_df["Interpretation"] = class_df["Class code"].map(
-                    class_labels
-                ).fillna("Other / background")
-                st.dataframe(class_df, use_container_width=True)
-
-                fig = px.bar(
-                    class_df,
-                    x="Interpretation",
-                    y="Pixel count",
-                    title="Agricultural stress class distribution"
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown(
-            """
-            <div class="tv-note">
-            These are relative, within-season screening values derived from the
-            project workflow. They are not calibrated drought categories or
-            independently validated crop-health diagnoses.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-# ============================================================
-# 13. GEOAI CLUSTERS
-# ============================================================
-
-elif page == "GeoAI Clusters":
-
-    st.markdown('<div class="tv-section">05 / Unsupervised spatial analytics</div>', unsafe_allow_html=True)
-    st.header("GeoAI Agricultural Clusters")
-
-    clusters, cluster_meta, cluster_err = safe_raster("clusters")
-
-    if clusters is None:
-        st.error(cluster_err)
-    else:
-        cluster_values = clusters[np.isfinite(clusters)]
-        unique_values, counts = np.unique(
-            cluster_values.astype(int),
-            return_counts=True
-        )
-
-        cluster_df = pd.DataFrame({
-            "Cluster": unique_values,
-            "Pixel count": counts
-        })
-        cluster_df["Share (%)"] = (
-            cluster_df["Pixel count"] /
-            cluster_df["Pixel count"].sum() * 100
-        )
-
-        c1, c2 = st.columns([1.4, 1])
-        with c1:
-            fig, ax = plt.subplots(figsize=(9, 6))
-            im = ax.imshow(clusters, cmap="tab10")
-            ax.set_title("Kharif 2025 – GeoAI Cluster Map")
-            ax.axis("off")
-            fig.colorbar(im, ax=ax, label="Cluster ID")
-            st.pyplot(fig, use_container_width=True)
-            plt.close(fig)
-
-        with c2:
-            st.markdown("### Cluster distribution")
-            st.dataframe(
-                cluster_df.round(2),
-                use_container_width=True,
-                hide_index=True
-            )
-            fig = px.pie(
-                cluster_df,
-                names="Cluster",
-                values="Pixel count",
-                hole=0.45
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown(
-            """
-            <div class="tv-note">
-            KMeans clusters are exploratory groupings based on the input features.
-            Cluster IDs are labels, not ordered severity classes. They should not
-            be interpreted as validated crop types or ground-truth agricultural
-            conditions without field observations.
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-# ============================================================
-# 14. DIGITAL TWIN SCENARIOS
-# ============================================================
-
-elif page == "Digital Twin Scenarios":
-
-    st.markdown('<div class="tv-section">06 / Intervention planning</div>', unsafe_allow_html=True)
-    st.header("Digital Twin – Intervention Scenario Simulator")
-
-    priority, priority_meta, priority_err = safe_raster("priority")
-    candidates, candidates_err = safe_vector("candidates_gpkg")
-    scenario_df, scenario_err = safe_csv("scenario_csv")
-    stats_json, stats_err = safe_json("statistics_json")
-
-    if priority is None:
-        st.error(priority_err)
-    else:
-        stats = finite_stats(priority)
-        k1, k2, k3 = st.columns(3)
-        k1.metric("Mean priority score", format_number(stats["mean"], 3))
-        k2.metric("Maximum priority score", format_number(stats["max"], 3))
-        k3.metric("Valid priority pixels", f"{stats['valid_pixels']:,}")
-
-        fig, ax = plt.subplots(figsize=(10, 6))
-        im = ax.imshow(priority, cmap="YlOrRd", vmin=0, vmax=1)
-        ax.set_title("Intervention Priority Index")
-        ax.axis("off")
-        fig.colorbar(im, ax=ax, label="Priority score")
-        st.pyplot(fig, use_container_width=True)
-        plt.close(fig)
-
-    st.markdown("### Candidate intervention locations")
-    if candidates is not None:
-        st.dataframe(
-            candidates.drop(columns="geometry", errors="ignore"),
-            use_container_width=True,
-            hide_index=True
-        )
-        candidates_wgs = candidates.to_crs("EPSG:4326")
-        csv_df = candidates_wgs.copy()
-        csv_df["longitude"] = csv_df.geometry.x
-        csv_df["latitude"] = csv_df.geometry.y
-        st.download_button(
-            "Download candidate locations (CSV)",
-            csv_df.drop(columns="geometry").to_csv(index=False).encode("utf-8"),
-            file_name="TerraVita_Bayad_Intervention_Candidates.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info(candidates_err)
-
-    st.markdown("### Scenario coverage comparison")
-    if scenario_df is not None:
-        required = {
-            "scenario_radius_m",
-            "coverage_percent"
-        }
-        if required.issubset(scenario_df.columns):
-            fig = px.bar(
-                scenario_df,
-                x="scenario_radius_m",
-                y="coverage_percent",
-                text="coverage_percent",
-                title="High-priority pixel coverage by scenario"
-            )
-            fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-            fig.update_layout(
-                xaxis_title="Buffer radius (m)",
-                yaxis_title="High-priority pixel coverage (%)"
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            st.dataframe(scenario_df, use_container_width=True)
-        else:
-            st.warning(
-                "Scenario CSV does not contain the expected columns: "
-                "scenario_radius_m and coverage_percent."
-            )
-    else:
-        st.info(scenario_err)
-
-    st.markdown(
-        """
-        <div class="tv-note">
-        Scenario coverage is a geometric overlap calculation between candidate
-        buffers and high-priority pixels. It does not simulate hydrological
-        connectivity, recharge, storage, crop response or intervention outcomes.
-        The candidate points are investigation priorities, not construction
-        approvals.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# ============================================================
-# 15. REPORTS AND DOWNLOADS
-# ============================================================
-
-elif page == "Reports & Downloads":
-
-    st.markdown('<div class="tv-section">07 / Reporting</div>', unsafe_allow_html=True)
-    st.header("Reports & Data Downloads")
-
-    download_items = [
-        ("Boundary GeoJSON", "boundary"),
-        ("Satellite indices GeoTIFF", "indices"),
-        ("Terrain GeoTIFF", "terrain"),
-        ("Agricultural stress GeoTIFF", "stress"),
-        ("Stress classes GeoTIFF", "stress_classes"),
-        ("GeoAI clusters GeoTIFF", "clusters"),
-        ("Intervention priority GeoTIFF", "priority"),
-        ("Priority classes GeoTIFF", "priority_classes"),
-        ("Candidate locations GeoPackage", "candidates_gpkg"),
-        ("Candidate locations CSV", "candidates_csv"),
-        ("Scenario results CSV", "scenario_csv"),
-        ("Scenario buffers GeoPackage", "scenario_buffers"),
-        ("Module 05 statistics JSON", "statistics_json"),
-    ]
-
-    st.markdown("### Available project files")
-
-    for label, key in download_items:
-        path = RESOLVED.get(key)
-        if path and os.path.isfile(path):
-            try:
-                with open(path, "rb") as f:
-                    content = f.read()
-                st.download_button(
-                    f"Download {label}",
-                    data=content,
-                    file_name=os.path.basename(path),
-                    key=f"download_{key}"
-                )
-            except Exception as e:
-                st.warning(f"Could not read {label}: {e}")
-        else:
-            st.caption(f"Not available: {label}")
-
-    st.markdown("---")
-    st.markdown("### Generate project summary PDF")
-
-    stats_json, stats_err = safe_json("statistics_json")
-    scenario_df, scenario_err = safe_csv("scenario_csv")
-    stress_arr, stress_meta, stress_err = safe_raster("stress")
-    priority_arr, priority_meta, priority_err = safe_raster("priority")
-
-    summary = {
-        "Project": "TerraVita Bayad Agricultural Digital Twin",
-        "Study area": "Bayad Taluka, Aravalli, Gujarat",
-        "Project directory": PROJECT,
-        "Boundary available": boundary is not None,
-        "Satellite indices available": RESOLVED["indices"] is not None,
-        "Agricultural stress available": stress_arr is not None,
-        "GeoAI clusters available": RESOLVED["clusters"] is not None,
-        "Intervention priority available": priority_arr is not None,
-    }
-
-    if boundary is not None:
-        try:
-            summary["Boundary area (km²)"] = round(
-                boundary.to_crs("EPSG:32643").geometry.area.sum() / 1e6,
-                2
-            )
+            k["AOI area (km2)"] = f"{aoi.to_crs(PROJECT_CRS).area.sum() / 1e6:,.1f}"
         except Exception:
             pass
+    for nm, label in [("NDVI", "Mean NDVI"), ("Agricultural Stress", "Mean stress score")]:
+        r = get_raster(nm, quiet=True)
+        if r is not None:
+            k[label] = f"{np.nanmean(r[0]):.3f}"
+    cand = get_vector("Intervention Candidates", quiet=True)
+    if cand is not None:
+        k["Intervention candidates"] = str(len(cand))
+    return k
 
-    if stress_arr is not None:
-        stress_stats = finite_stats(stress_arr)
-        summary["Mean relative stress"] = round(stress_stats["mean"], 4)
 
-    if priority_arr is not None:
-        priority_stats = finite_stats(priority_arr)
-        summary["Mean priority score"] = round(priority_stats["mean"], 4)
+def build_pdf(kpis):
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.pdfgen import canvas
+    except ImportError:
+        return None
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    w, h = A4
+    y = h - 60
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(50, y, "TerraVita | Bayad Agricultural Digital Twin")
+    y -= 22
+    c.setFont("Helvetica", 10)
+    c.drawString(50, y, f"Summary report generated {date.today().isoformat()}")
+    y -= 34
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Key indicators")
+    y -= 20
+    c.setFont("Helvetica", 11)
+    for key, val in kpis.items():
+        c.drawString(60, y, f"{key}: {val}")
+        y -= 18
+    y -= 16
+    c.setFont("Helvetica-Oblique", 9)
+    for line in [
+        "Screening-level decision-support prototype. Stress values are relative,",
+        "not calibrated crop-loss measurements. Verify boundary vintage, CRS,",
+        "raster band order and input dates before client use.",
+    ]:
+        c.drawString(50, y, line)
+        y -= 13
+    c.showPage()
+    c.save()
+    return buf.getvalue()
 
-    if stats_json:
-        summary["Candidate count"] = stats_json.get("candidate_count", "N/A")
 
-    pdf_bytes = make_pdf_report(summary, scenario_df)
-
-    st.download_button(
-        "Generate and download PDF summary",
-        data=pdf_bytes,
-        file_name="TerraVita_Bayad_Digital_Twin_Summary.pdf",
-        mime="application/pdf"
-    )
-
-    # Build a ZIP from available smaller outputs and report tables.
-    if st.button("Prepare project report package ZIP"):
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(
-            zip_buffer, "w", compression=zipfile.ZIP_DEFLATED
-        ) as zf:
-            for key in [
-                "candidates_csv",
-                "scenario_csv",
-                "statistics_json"
-            ]:
-                path = RESOLVED.get(key)
-                if path and os.path.isfile(path):
-                    zf.write(path, arcname=os.path.basename(path))
-
-            zf.writestr(
-                "TerraVita_Dashboard_Summary.json",
-                json.dumps(summary, indent=2)
-            )
-
-            zf.writestr(
-                "README_LIMITATIONS.txt",
-                "TerraVita Bayad Agricultural Digital Twin dashboard package.\n"
-                "Scenario coverage is spatial buffer overlap only.\n"
-                "It does not estimate groundwater recharge, crop yield, "
-                "water savings or intervention effectiveness.\n"
-                "Candidate points require field and engineering validation.\n"
-            )
-
-        zip_buffer.seek(0)
-        st.download_button(
-            "Download report package ZIP",
-            data=zip_buffer.getvalue(),
-            file_name="TerraVita_Bayad_Report_Package.zip",
-            mime="application/zip"
-        )
-
-# ============================================================
-# 16. DATA QUALITY
-# ============================================================
-
-elif page == "Data Quality":
-
-    st.markdown('<div class="tv-section">08 / Data validation</div>', unsafe_allow_html=True)
-    st.header("Data Availability & Quality Checks")
-
-    rows = []
-
-    for key, paths in PATHS.items():
-        resolved = RESOLVED.get(key)
-        row = {
-            "Dataset": key,
-            "Status": "Available" if resolved else "Missing",
-            "Resolved path": resolved if resolved else " / ".join(paths)
-        }
-
-        if resolved and resolved.lower().endswith((".tif", ".tiff")):
-            try:
-                with rasterio.open(resolved) as src:
-                    row["CRS"] = str(src.crs)
-                    row["Width"] = src.width
-                    row["Height"] = src.height
-                    row["Bands"] = src.count
-                    row["NoData"] = src.nodata
-                    row["Data type"] = ", ".join(src.dtypes)
-                    row["Validation"] = (
-                        "OK" if src.crs is not None and src.count > 0
-                        else "Check CRS / bands"
-                    )
-            except Exception as e:
-                row["Validation"] = f"ERROR: {e}"
-
-        elif resolved:
-            row["Validation"] = "File found; vector/table content checked when loaded."
-
-        rows.append(row)
-
-    quality_df = pd.DataFrame(rows)
-    st.dataframe(quality_df, use_container_width=True, hide_index=True)
-
-    st.markdown("### Important band assumptions")
-    st.write(
-        "- Module 02 index stack: Band 1 NDVI, Band 2 NDWI, "
-        "Band 3 MNDWI, Band 4 NDMI, Band 5 valid observations."
-    )
-    st.write(
-        "- Module 03 terrain stack: this dashboard assumes Band 1 elevation "
-        "and Band 2 slope for the map selector. Confirm the actual export order."
-    )
-    st.write(
-        "- Module 04 cluster raster: cluster IDs are categorical labels."
-    )
-    st.write(
-        "- Module 05 priority raster: expected continuous score between 0 and 1."
-    )
-
+# ----------------------------------------------------------------------------
+# PAGES
+# ----------------------------------------------------------------------------
+def page_overview():
     st.markdown(
-        """
-        <div class="tv-note">
-        A file being present does not prove its scientific validity. Confirm
-        acquisition dates, CRS, band order, nodata handling, spatial alignment,
-        source provenance and administrative boundary vintage before using
-        the dashboard for client or policy decisions.
-        </div>
-        """,
-        unsafe_allow_html=True
+        """<div class="tv-hero"><div class="eyebrow">GEOSPATIAL INTELLIGENCE ·
+        AGRICULTURAL RESILIENCE</div><h1>Bayad Agricultural Digital Twin</h1>
+        <p>GIS, Sentinel-2 remote sensing and GeoAI decision-support prototype for
+        Bayad Taluka, Aravalli District, Gujarat, India.</p></div>""",
+        unsafe_allow_html=True,
+    )
+    if not any(v is not None for v in ds.values()):
+        st.error("No project files were found. Add your Module 01-05 files to the "
+                 "`data/` and `outputs/` folders of the repository (see the Data Checks page).")
+    kpis = compute_kpis()
+    cols = st.columns(len(kpis))
+    for col, (k, v) in zip(cols, kpis.items()):
+        col.metric(k, v)
+    st.markdown("### Modules")
+    mods = [
+        ("01", "AOI Verification", "Boundary preparation and quality checks"),
+        ("02", "Satellite Indices", "Sentinel-2 NDVI, NDWI, MNDWI, NDMI"),
+        ("03", "Rainfall & Terrain", "CHIRPS, SRTM elevation, slope, drainage"),
+        ("04", "Stress & GeoAI", "Relative stress screening, KMeans clusters"),
+        ("05", "Scenarios", "Priority scoring and buffer coverage"),
+        ("06", "Dashboard", "Maps, analytics and report downloads"),
+    ]
+    for col, (n, t, d) in zip(st.columns(6), mods):
+        col.markdown(f"**{n} · {t}**  \n<span style='color:#a8bdc7;font-size:13px'>{d}</span>",
+                     unsafe_allow_html=True)
+    st.markdown(
+        "<div class='tv-note'>Prototype for screening and planning support. Not a live "
+        "sensor-connected or physically calibrated digital twin. Stress classes are "
+        "relative to the study area.</div>",
+        unsafe_allow_html=True,
     )
 
-# ============================================================
-# 17. FOOTER
-# ============================================================
 
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align:center;color:#829EAA;font-size:11px;padding:8px;">
-      TERRAVITA ENVIRONMENTAL & GEOSPATIAL CONSULTANCY
-      <br>
-      Satellite + GIS + AI for Environmental, Urban & Geological Decision-Making
-      <br>
-      Bayad Agricultural Digital Twin · Prototype Dashboard
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+def page_map():
+    st.header("GIS Map")
+    aoi = get_vector("AOI Boundary")
+    avail = [n for n in RASTERS if ds.get(n) is not None]
+    c1, c2, c3 = st.columns([3, 1, 1])
+    chosen = c1.multiselect("Raster layers", avail, default=avail[:1])
+    opacity = c2.slider("Opacity", 0.1, 1.0, 0.75, 0.05)
+    tiles = c3.selectbox("Base map", ["OpenStreetMap", "Satellite (Esri)"])
+    c4, c5 = st.columns(2)
+    show_c = c4.checkbox("Intervention candidates", value=True)
+    show_b = c5.checkbox("Saved scenario buffers", value=False)
+    m = new_map(aoi, tiles)
+    for n in chosen:
+        add_raster(m, n, opacity)
+    if show_c:
+        cand = get_vector("Intervention Candidates")
+        if cand is not None:
+            add_points(m, cand)
+    if show_b:
+        buf = get_vector("Scenario Buffers")
+        if buf is not None:
+            folium.GeoJson(
+                geom_only(buf, 0.0002).to_json(), name="Scenario buffers",
+                style_function=lambda x: {"color": "#ff7f50", "weight": 1, "fillOpacity": 0.15},
+            ).add_to(m)
+    show_map(m)
+
+
+def page_indices():
+    st.header("Satellite Indices")
+    st.caption("Statistics are computed on a down-sampled preview (max "
+               f"{MAX_DIM}px) for speed.")
+    tabs = st.tabs(INDEX_NAMES)
+    rows = []
+    for tab, name in zip(tabs, INDEX_NAMES):
+        with tab:
+            r = get_raster(name)
+            if r is None:
+                continue
+            data, bounds = r
+            st_ = stats_of(data)
+            rows.append({"Index": name, **{k: round(v, 4) for k, v in st_.items()}})
+            c1, c2 = st.columns([3, 2])
+            with c1:
+                fig = raster_figure(name, data, bounds)
+                st.pyplot(fig)
+                plt.close(fig)
+            with c2:
+                st.dataframe(pd.DataFrame(st_, index=["value"]).T.round(4))
+                v = data[np.isfinite(data)]
+                hist = px.histogram(x=v, nbins=40, labels={"x": name}, template="plotly_dark")
+                hist.update_traces(marker_color="#35c6b5")
+                st.plotly_chart(hist)
+    if rows:
+        st.subheader("Index comparison")
+        st.dataframe(pd.DataFrame(rows).set_index("Index"))
+
+
+def stress_classes(data):
+    v = data[np.isfinite(data)]
+    uniq = np.unique(v)
+    if len(uniq) <= 6 and np.allclose(uniq, np.round(uniq)):
+        labels = [f"Class {int(u)}" for u in uniq]
+        counts = [(v == u).sum() for u in uniq]
+    else:
+        edges = np.quantile(v, [0, 0.25, 0.5, 0.75, 1.0])
+        edges = np.unique(edges)
+        if len(edges) < 3:
+            return None
+        idx = np.clip(np.digitize(v, edges[1:-1]), 0, len(edges) - 2)
+        names = ["Low", "Moderate", "High", "Very high"][: len(edges) - 1]
+        labels = names
+        counts = [(idx == i).sum() for i in range(len(names))]
+    pct = 100 * np.array(counts) / np.sum(counts)
+    return pd.DataFrame({"Class": labels, "Share of area (%)": pct.round(1)})
+
+
+def page_stress():
+    st.header("Agricultural Stress")
+    r = get_raster("Agricultural Stress")
+    if r is not None:
+        data, bounds = r
+        c1, c2 = st.columns([3, 2])
+        with c1:
+            fig = raster_figure("Agricultural Stress", data, bounds)
+            st.pyplot(fig)
+            plt.close(fig)
+        with c2:
+            cls = stress_classes(data)
+            if cls is not None:
+                st.subheader("Relative stress classes")
+                bar = px.bar(cls, x="Class", y="Share of area (%)", template="plotly_dark")
+                bar.update_traces(marker_color="#e76f51")
+                st.plotly_chart(bar)
+                st.dataframe(cls.set_index("Class"))
+            st.dataframe(pd.DataFrame(stats_of(data), index=["value"]).T.round(4))
+        st.markdown(
+            "<div class='tv-note'>Stress is a <b>relative</b> screening score built from "
+            "satellite indicators. Quartile classes compare areas within Bayad only.</div>",
+            unsafe_allow_html=True,
+        )
+    tbl = get_table("Stress Summary", quiet=True)
+    if tbl is not None:
+        st.subheader("Stress summary table (Module 04)")
+        st.dataframe(tbl)
+
+
+def page_clusters():
+    st.header("GeoAI Clusters")
+    r = get_raster("GeoAI Clusters")
+    if r is None:
+        return
+    data, bounds = r
+    vals, counts = np.unique(data[np.isfinite(data)].astype(int), return_counts=True)
+    share = pd.DataFrame({"Cluster": vals, "Share of area (%)": (100 * counts / counts.sum()).round(1)})
+    c1, c2 = st.columns([3, 2])
+    with c1:
+        fig = raster_figure("GeoAI Clusters", data, bounds)
+        st.pyplot(fig)
+        plt.close(fig)
+    with c2:
+        pie = px.pie(share, names="Cluster", values="Share of area (%)", template="plotly_dark",
+                     color_discrete_sequence=px.colors.qualitative.Plotly)
+        st.plotly_chart(pie)
+        st.dataframe(share.set_index("Cluster"))
+    # cluster profile (only when other rasters share the exact preview grid)
+    prof = {}
+    for nm in ["NDVI", "NDMI", "Agricultural Stress"]:
+        o = get_raster(nm, quiet=True)
+        if o is not None and o[0].shape == data.shape:
+            prof[nm] = o[0]
+    if prof:
+        rows = []
+        for v in vals:
+            mask = (data == v)
+            row = {"Cluster": v}
+            for nm, arr in prof.items():
+                row[f"Mean {nm}"] = round(float(np.nanmean(arr[mask])), 3)
+            rows.append(row)
+        st.subheader("Cluster profile")
+        st.dataframe(pd.DataFrame(rows).set_index("Cluster"))
+    tbl = get_table("Cluster Summary", quiet=True)
+    if tbl is not None:
+        st.subheader("Cluster summary table (Module 04)")
+        st.dataframe(tbl)
+    st.markdown(
+        "<div class='tv-note'>KMeans clusters are unsupervised, exploratory groupings. "
+        "Interpret them with field knowledge before drawing agronomic conclusions.</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def page_scenarios():
+    st.header("Digital Twin Scenarios")
+    tbl = get_table("Scenario Summary", quiet=True)
+    if tbl is not None:
+        st.subheader("Saved scenario results (Module 05)")
+        st.dataframe(tbl)
+        num = tbl.select_dtypes("number").columns.tolist()
+        if num and len(tbl) > 1:
+            label = tbl.columns[0]
+            fig = px.bar(tbl, x=label, y=num[:3], barmode="group", template="plotly_dark")
+            st.plotly_chart(fig)
+
+    cand = get_vector("Intervention Candidates")
+    aoi = get_vector("AOI Boundary")
+    if cand is None or aoi is None:
+        st.info("The interactive what-if needs both the AOI boundary and the intervention candidates.")
+        return
+
+    st.subheader("What-if: buffer coverage")
+    pts = cand.to_crs(PROJECT_CRS)
+    pts["geometry"] = pts.geometry.representative_point()
+    aoi_p = aoi.to_crs(PROJECT_CRS)
+    aoi_geom = union(aoi_p.geometry)
+    score_col = next(
+        (c for c in pts.columns if c != "geometry"
+         and any(k in c.lower() for k in ("priority", "score"))
+         and pd.api.types.is_numeric_dtype(pts[c])), None)
+
+    c1, c2, c3 = st.columns(3)
+    radius = c1.slider("Buffer radius (m)", 100, 3000, 500, 50)
+    n_all = len(pts)
+    top_n = c2.slider("Top candidates", 1, n_all, min(20, n_all)) if n_all > 1 else 1
+    c3.metric("Ranking column", score_col or "first rows (no score column)")
+    sel = pts.sort_values(score_col, ascending=False).head(top_n) if score_col else pts.head(top_n)
+
+    def coverage(r):
+        u = union(sel.geometry.buffer(r))
+        return 100 * u.intersection(aoi_geom).area / aoi_geom.area
+
+    m1, m2 = st.columns(2)
+    m1.metric("AOI covered by buffers", f"{coverage(radius):.1f}%")
+    m2.metric("Candidates used", str(len(sel)))
+
+    sweep = pd.DataFrame({"Radius (m)": [250, 500, 1000, 1500, 2000, 3000]})
+    sweep["Coverage (%)"] = [round(coverage(r), 2) for r in sweep["Radius (m)"]]
+    fig = px.line(sweep, x="Radius (m)", y="Coverage (%)", markers=True, template="plotly_dark")
+    fig.update_traces(line_color="#35c6b5")
+    st.plotly_chart(fig)
+
+    m = new_map(aoi)
+    buf = gpd.GeoDataFrame(geometry=sel.geometry.buffer(radius), crs=PROJECT_CRS)
+    folium.GeoJson(
+        geom_only(buf, 0.0002).to_json(), name=f"Buffers {radius} m",
+        style_function=lambda x: {"color": "#ff7f50", "weight": 1, "fillOpacity": 0.2},
+    ).add_to(m)
+    add_points(m, sel, "Selected candidates")
+    show_map(m, 560)
+    st.markdown(
+        "<div class='tv-note'>Coverage is a geometric screening measure (buffer area inside "
+        "the AOI). It does not model crop, hydrologic or economic outcomes.</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def page_downloads():
+    st.header("Download Reports")
+    kpis = compute_kpis()
+    c1, c2 = st.columns(2)
+    kdf = pd.DataFrame({"Indicator": list(kpis.keys()), "Value": list(kpis.values())})
+    c1.download_button("Summary CSV", kdf.to_csv(index=False).encode(),
+                       "terravita_bayad_summary.csv", "text/csv")
+    pdf = build_pdf(kpis)
+    if pdf:
+        c2.download_button("Summary PDF", pdf, "terravita_bayad_summary.pdf", "application/pdf")
+    else:
+        c2.info("Add `reportlab` to requirements.txt to enable the PDF summary.")
+
+    st.subheader("Source layers")
+    shown = False
+    for name, p in ds.items():
+        if p is None:
+            continue
+        try:
+            size = p.stat().st_size
+            if size > 100 * 1024 * 1024:
+                st.caption(f"{name}: file too large for download here ({size / 1e6:.0f} MB).")
+                continue
+            mime = {".tif": "image/tiff", ".tiff": "image/tiff", ".csv": "text/csv",
+                    ".geojson": "application/geo+json"}.get(p.suffix.lower(), "application/octet-stream")
+            st.download_button(f"{name} ({p.name})", p.read_bytes(), p.name, mime, key=f"dl_{name}")
+            shown = True
+        except Exception as e:
+            st.warning(f"{name}: {e}")
+    if not shown:
+        st.info("No source files available to download.")
+
+
+def page_checks():
+    st.header("Data Checks")
+    st.caption("Searching in: " + ", ".join(f"`{rel(d)}/`" for d in SEARCH_DIRS))
+    rows = []
+    for name in ds:
+        p = ds[name]
+        kind = "Raster" if name in RASTERS else ("Vector" if name in VECTORS else "Table")
+        row = {"Layer": name, "Type": kind, "Status": "Missing", "File": "", "Details": ""}
+        if p is not None:
+            row["File"] = rel(p)
+            row["Status"] = "Found"
+            if kind == "Raster":
+                v = validate_raster(str(p))
+                row["Status"] = "OK" if v["ok"] else "Error"
+                parts = []
+                if v.get("crs"):
+                    parts.append(v["crs"])
+                if "width" in v:
+                    parts.append(f"{v['width']}x{v['height']} px, {v['bands']} band(s)")
+                if "valid_pct" in v:
+                    parts.append(f"{v['valid_pct']}% valid")
+                parts += v["errors"] + v["warnings"]
+                row["Details"] = "; ".join(parts)
+        rows.append(row)
+    df = pd.DataFrame(rows)
+    st.dataframe(df.set_index("Layer"))
+    miss = df[df["Status"] == "Missing"]["Layer"].tolist()
+    if miss:
+        st.warning("Missing: " + ", ".join(miss) +
+                   ". Check file names (case-sensitive on GitHub) or set OVERRIDES in app.py.")
+
+
+# ----------------------------------------------------------------------------
+# NAVIGATION
+# ----------------------------------------------------------------------------
+PAGES = {
+    "Overview": page_overview,
+    "GIS Map": page_map,
+    "Satellite Indices": page_indices,
+    "Agricultural Stress": page_stress,
+    "GeoAI Clusters": page_clusters,
+    "Digital Twin Scenarios": page_scenarios,
+    "Download Reports": page_downloads,
+    "Data Checks": page_checks,
+}
+
+with st.sidebar:
+    st.markdown("## 🌍 TERRAVITA")
+    st.caption("Environmental & Geospatial Consultancy")
+    choice = st.radio("Navigate", list(PAGES.keys()))
+    found = sum(v is not None for v in ds.values())
+    st.markdown("---")
+    st.caption(f"Data layers found: {found} of {len(ds)}")
+    st.caption("Bayad Taluka, Aravalli, Gujarat")
+
+try:
+    PAGES[choice]()
+except Exception as exc:  # last-resort guard so the app never shows a raw traceback
+    st.error(f"Something went wrong on this page: {exc}")
+    st.info("Open the Data Checks page to confirm all files and rasters are valid.")
