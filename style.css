@@ -1,29 +1,47 @@
 
-/* ==========================================
-   TERRAVITA - BAYAD DIGITAL TWIN
-   Main stylesheet
-========================================== */
+/* =========================================================
+   TERRAVITA
+   BAYAD AGRICULTURAL DIGITAL TWIN
+   Complete responsive dashboard stylesheet
+========================================================= */
+
+/* -------------------------
+   01. DESIGN VARIABLES
+------------------------- */
 
 :root {
-  --background: #08131f;
-  --sidebar: #0b1926;
-  --surface: #102131;
-  --surface-light: #142a3b;
-  --border: rgba(174, 205, 220, 0.12);
+  --bg: #08131f;
+  --sidebar-bg: #0b1926;
+  --panel: #102131;
+  --panel-hover: #142a3b;
+  --panel-soft: #0d1c29;
 
-  --text: #edf5f7;
+  --border: rgba(174, 205, 220, 0.13);
+
+  --white: #edf5f7;
+  --text: #dce9ed;
   --muted: #91a7b5;
+
   --teal: #19b8a6;
   --teal-light: #55d6c3;
-
   --green: #46c58a;
   --yellow: #e7b85c;
   --orange: #e78b55;
   --red: #dc6470;
 
-  --sidebar-width: 250px;
-  --radius: 15px;
+  --sidebar-width: 260px;
+  --topbar-height: 90px;
+
+  --radius: 14px;
+  --radius-small: 9px;
+
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
+
+
+/* -------------------------
+   02. GLOBAL RESET
+------------------------- */
 
 * {
   margin: 0;
@@ -33,15 +51,25 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 95px;
+  scroll-padding-top: 110px;
 }
 
 body {
-  background: var(--background);
-  color: var(--text);
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--white);
+
+  font-family:
+    Inter,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+
   font-size: 14px;
   line-height: 1.6;
+
+  overflow-x: hidden;
 }
 
 a {
@@ -53,90 +81,132 @@ button {
   font: inherit;
 }
 
-
-/* ==========================================
-   MAIN LAYOUT
-========================================== */
-
-.app-shell {
-  min-height: 100vh;
+img {
+  display: block;
+  max-width: 100%;
 }
 
-.sidebar {
-  width: var(--sidebar-width);
-  position: fixed;
-  inset: 0 auto 0 0;
-  z-index: 1000;
 
-  display: flex;
-  flex-direction: column;
+/* -------------------------
+   03. MAIN APPLICATION
+------------------------- */
 
-  padding: 25px 17px;
-  background: var(--sidebar);
-  border-right: 1px solid var(--border);
+.app-shell {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
 }
 
 .main-content {
-  margin-left: var(--sidebar-width);
+  display: block;
+  min-width: 0;
   min-height: 100vh;
+
+  margin-left: var(--sidebar-width);
   padding: 0 34px;
-  max-width: 1800px;
+
+  background: var(--bg);
 }
 
 
-/* ==========================================
-   BRAND
-========================================== */
+/* -------------------------
+   04. SIDEBAR
+------------------------- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: var(--sidebar-width);
+  height: 100vh;
+
+  padding: 24px 17px;
+
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  z-index: 1000;
+
+  transition: transform 0.25s ease;
+}
+
+
+/* Brand */
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 5px 7px 30px;
+
+  padding: 7px 8px 30px;
 }
 
-.brand-mark,
-.profile-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+.brand-mark {
+  width: 43px;
+  height: 43px;
+
+  flex: 0 0 43px;
+
   display: grid;
   place-items: center;
-  font-weight: 800;
-  letter-spacing: -1px;
+
+  border-radius: 12px;
+
+  background: linear-gradient(
+    135deg,
+    #55d6c3,
+    #129b91
+  );
+
   color: #061a1c;
-  background: linear-gradient(135deg, #55d6c3, #129b91);
+
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -1px;
 }
 
 .brand-copy {
   display: flex;
   flex-direction: column;
-  line-height: 1.4;
+  min-width: 0;
+  line-height: 1.45;
 }
 
 .brand-copy strong {
+  color: var(--white);
   font-size: 15px;
   letter-spacing: 2px;
 }
 
 .brand-copy span {
-  font-size: 9px;
   color: var(--muted);
-  letter-spacing: 1.1px;
+  font-size: 9px;
+  letter-spacing: 1px;
 }
 
 
-/* ==========================================
-   SIDEBAR NAVIGATION
-========================================== */
+/* Navigation heading */
 
 .sidebar-label {
-  color: #637d8e;
-  font-size: 10px;
-  letter-spacing: 1.8px;
-  font-weight: 700;
   padding: 12px 12px;
+
+  color: #718b9b;
+
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.8px;
 }
+
+
+/* Navigation links */
 
 .navigation {
   display: flex;
@@ -149,81 +219,107 @@ button {
   align-items: center;
   gap: 13px;
 
-  padding: 12px 13px;
-  border-radius: 9px;
+  min-height: 44px;
+
+  padding: 10px 13px;
 
   color: #a7bac5;
-  font-size: 13px;
-  transition: 0.2s ease;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .nav-link:hover {
-  background: rgba(25, 184, 166, 0.09);
-  color: var(--text);
+  color: var(--white);
+  background: rgba(25, 184, 166, 0.08);
 }
 
 .nav-link.active {
-  background: rgba(25, 184, 166, 0.15);
   color: var(--teal-light);
-  border-left: 3px solid var(--teal);
+
+  background: rgba(25, 184, 166, 0.13);
+
+  border-left-color: var(--teal);
 }
 
 .nav-icon {
-  width: 19px;
-  font-size: 19px;
+  width: 21px;
+  flex: 0 0 21px;
+
   text-align: center;
+
+  font-size: 18px;
 }
+
+
+/* Sidebar bottom */
 
 .sidebar-bottom {
   margin-top: auto;
-  padding: 17px 12px 5px;
+  padding: 18px 12px 6px;
+
   border-top: 1px solid var(--border);
 }
 
 .sidebar-bottom p {
-  color: var(--muted);
-  font-size: 11px;
   margin-top: 5px;
+
+  color: var(--muted);
+  font-size: 10px;
 }
 
-.sidebar-location {
-  color: var(--teal-light) !important;
+.sidebar-bottom .sidebar-location {
+  color: var(--teal-light);
 }
 
 .sidebar-status {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+
   color: #d2e4e8;
+  font-size: 11px;
 }
 
 
-/* ==========================================
-   STATUS DOT
-========================================== */
+/* Status indicator */
 
 .status-dot {
   display: inline-block;
+
   width: 8px;
   height: 8px;
   flex: 0 0 8px;
+
   border-radius: 50%;
+
   background: var(--green);
-  box-shadow: 0 0 10px rgba(70, 197, 138, 0.35);
+
+  box-shadow:
+    0 0 10px rgba(70, 197, 138, 0.35);
 }
 
 
-/* ==========================================
-   TOP BAR
-========================================== */
+/* -------------------------
+   05. TOP HEADER
+------------------------- */
 
 .topbar {
-  min-height: 91px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+
+  width: 100%;
+  min-height: var(--topbar-height);
 
   border-bottom: 1px solid var(--border);
 }
@@ -235,46 +331,81 @@ button {
   gap: 15px;
 }
 
-.breadcrumb {
-  color: var(--muted);
-  font-size: 11px;
-  margin-bottom: 3px;
+.topbar h1 {
+  color: var(--white);
+
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
-.topbar h1 {
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.4px;
+.breadcrumb {
+  margin-bottom: 3px;
+
+  color: var(--muted);
+  font-size: 10px;
 }
 
 .project-tag {
-  border: 1px solid rgba(25, 184, 166, 0.35);
-  color: var(--teal-light);
-  background: rgba(25, 184, 166, 0.08);
   padding: 7px 11px;
+
+  color: var(--teal-light);
+
+  background: rgba(25, 184, 166, 0.08);
+
+  border: 1px solid rgba(25, 184, 166, 0.3);
   border-radius: 7px;
+
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: 1px;
+
+  white-space: nowrap;
+}
+
+.profile-mark {
+  display: grid;
+  place-items: center;
+
+  width: 39px;
+  height: 39px;
+
+  border-radius: 11px;
+
+  color: #061a1c;
+  background: linear-gradient(
+    135deg,
+    #55d6c3,
+    #129b91
+  );
+
+  font-weight: 850;
 }
 
 .menu-button {
   display: none;
-  color: var(--text);
+
+  padding: 8px 12px;
+
+  color: var(--white);
+  background: var(--panel);
+
   border: 1px solid var(--border);
-  background: var(--surface);
   border-radius: 8px;
-  padding: 8px 11px;
+
   cursor: pointer;
 }
 
 
-/* ==========================================
-   PAGE SECTIONS
-========================================== */
+/* -------------------------
+   06. PAGE SECTIONS
+------------------------- */
 
 .page-section {
-  padding: 30px 0 10px;
+  display: block;
+  width: 100%;
+
+  padding: 32px 0 12px;
 }
 
 .welcome-row,
@@ -283,64 +414,88 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
+
   margin-bottom: 22px;
 }
 
 .eyebrow {
-  color: var(--teal-light);
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 1.8px;
   margin-bottom: 7px;
+
+  color: var(--teal-light);
+
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
 }
 
 .welcome-row h2,
 .section-heading h2 {
-  font-size: clamp(21px, 2.2vw, 27px);
-  line-height: 1.25;
-  font-weight: 650;
-  letter-spacing: -0.6px;
+  color: var(--white);
+
+  font-size: clamp(21px, 2.1vw, 28px);
+  font-weight: 700;
+  line-height: 1.3;
+
+  letter-spacing: -0.7px;
 }
 
 .section-description {
-  color: var(--muted);
+  max-width: 700px;
   margin-top: 7px;
-  max-width: 680px;
+
+  color: var(--muted);
   font-size: 12px;
+  line-height: 1.7;
 }
 
 .date-chip {
   display: flex;
   align-items: center;
   gap: 9px;
-  white-space: nowrap;
+
   padding: 9px 13px;
+
+  color: #c7d8df;
+  background: var(--panel);
+
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--surface);
-  color: #c7d8df;
-  font-size: 11px;
+
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 
-/* ==========================================
-   KPI CARDS
-========================================== */
+/* -------------------------
+   07. KPI CARDS
+------------------------- */
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 15px;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+
+  width: 100%;
   margin-bottom: 20px;
 }
 
 .kpi-card {
-  background: var(--surface);
+  min-width: 0;
+
+  padding: 19px;
+
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  min-width: 0;
-  transition: transform 0.2s, border-color 0.2s;
+
+  box-shadow: var(--shadow);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .kpi-card:hover {
@@ -350,8 +505,9 @@ button {
 
 .kpi-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+
   color: var(--muted);
   font-size: 11px;
 }
@@ -363,39 +519,60 @@ button {
 
 .kpi-value {
   margin-top: 15px;
-  font-size: clamp(20px, 2vw, 26px);
-  font-weight: 700;
+
+  color: var(--white);
+
+  font-size: clamp(20px, 2vw, 27px);
+  font-weight: 750;
+  line-height: 1.3;
+
   letter-spacing: -0.8px;
   overflow-wrap: anywhere;
 }
 
 .kpi-note {
+  margin-top: 6px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-top: 5px;
 }
 
 
-/* ==========================================
-   CONTENT GRID AND PANELS
-========================================== */
+/* -------------------------
+   08. DASHBOARD GRID
+------------------------- */
 
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr);
+
+  grid-template-columns:
+    minmax(0, 1.55fr)
+    minmax(280px, 1fr);
+
+  align-items: stretch;
+
   gap: 18px;
+  width: 100%;
 }
 
 .content-grid.two-column {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
 }
+
+
+/* General panel */
 
 .panel {
   min-width: 0;
-  padding: 20px;
-  background: var(--surface);
+
+  padding: 21px;
+
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+
+  box-shadow: var(--shadow);
 }
 
 .panel-heading {
@@ -403,67 +580,103 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+
   margin-bottom: 17px;
 }
 
 .panel-heading h3 {
+  color: var(--white);
+
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .panel-badge {
+  padding: 5px 9px;
+
   color: var(--teal-light);
-  background: rgba(25, 184, 166, 0.1);
-  border: 1px solid rgba(25, 184, 166, 0.2);
+
+  background: rgba(25, 184, 166, 0.09);
+
+  border: 1px solid rgba(25, 184, 166, 0.22);
   border-radius: 6px;
-  padding: 5px 8px;
+
   font-size: 9px;
   white-space: nowrap;
 }
 
 .panel-description {
   color: #b1c2cb;
+
   font-size: 12px;
   line-height: 1.8;
 }
 
 .small-note {
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.7;
   margin-top: 17px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+  line-height: 1.75;
 }
 
 
-/* ==========================================
-   MAP
-========================================== */
+/* -------------------------
+   09. LEAFLET MAP
+------------------------- */
+
+.map-panel {
+  overflow: hidden;
+}
 
 #bayadMap {
+  display: block;
+
   width: 100%;
-  height: 330px;
+  height: 340px;
+  min-height: 280px;
+
   overflow: hidden;
-  border-radius: 10px;
+
   background: #dce7e9;
+  border-radius: 10px;
+
   z-index: 1;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+
+  font-family: Arial, sans-serif;
+}
+
+.leaflet-control-attribution {
+  font-size: 9px !important;
 }
 
 .map-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
+
   margin-top: 13px;
+
   color: var(--muted);
   font-size: 10px;
 }
 
 .legend-dot {
   display: inline-block;
+
   width: 8px;
   height: 8px;
+
   margin-right: 5px;
+
   border-radius: 50%;
 }
 
@@ -476,9 +689,9 @@ button {
 }
 
 
-/* ==========================================
-   PROJECT INFORMATION
-========================================== */
+/* -------------------------
+   10. PROJECT INFORMATION
+------------------------- */
 
 .info-list {
   display: flex;
@@ -487,11 +700,12 @@ button {
 
 .info-item {
   padding: 11px 0;
+
   border-bottom: 1px solid var(--border);
 }
 
 .info-item:last-child {
-  border-bottom: 0;
+  border-bottom: none;
 }
 
 .info-item span,
@@ -500,26 +714,31 @@ button {
 }
 
 .info-item span {
+  margin-bottom: 3px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-bottom: 3px;
 }
 
 .info-item strong {
+  color: var(--text);
+
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 600;
 }
 
 .text-teal {
-  color: var(--teal-light);
+  color: var(--teal-light) !important;
 }
 
 .notice {
+  margin-top: 15px;
+  padding: 14px;
+
   background: rgba(25, 184, 166, 0.07);
+
   border: 1px solid rgba(25, 184, 166, 0.2);
   border-radius: 9px;
-  padding: 13px;
-  margin-top: 15px;
 }
 
 .notice strong {
@@ -528,41 +747,60 @@ button {
 }
 
 .notice p {
+  margin-top: 5px;
+
   color: #a9bdc7;
+
   font-size: 10px;
   line-height: 1.7;
-  margin-top: 4px;
 }
 
 
-/* ==========================================
-   SATELLITE INDICATORS
-========================================== */
+/* -------------------------
+   11. SATELLITE INDICATORS
+------------------------- */
 
 .indicator-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 15px;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
 }
 
 .indicator-card {
-  background: var(--surface);
+  min-width: 0;
+
+  padding: 20px;
+
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 19px;
+
+  transition: border-color 0.2s ease;
+}
+
+.indicator-card:hover {
+  border-color: rgba(25, 184, 166, 0.4);
 }
 
 .indicator-icon {
-  width: 39px;
-  height: 39px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: rgba(25, 184, 166, 0.13);
+
+  width: 40px;
+  height: 40px;
+
+  margin-bottom: 15px;
+
   color: var(--teal-light);
+  background: rgba(25, 184, 166, 0.13);
+
+  border-radius: 10px;
+
   font-size: 12px;
-  font-weight: 750;
-  margin-bottom: 14px;
+  font-weight: 800;
 }
 
 .indicator-card h3 {
@@ -570,22 +808,26 @@ button {
 }
 
 .indicator-card p {
-  min-height: 55px;
+  min-height: 58px;
+
+  margin: 8px 0 13px;
+
   color: var(--muted);
   font-size: 11px;
-  margin: 7px 0 14px;
+  line-height: 1.7;
 }
 
 .data-state {
   display: inline-block;
+
   color: var(--yellow);
   font-size: 9px;
 }
 
 
-/* ==========================================
-   AGRICULTURAL STRESS
-========================================== */
+/* -------------------------
+   12. AGRICULTURAL STRESS
+------------------------- */
 
 .stress-list {
   display: flex;
@@ -600,19 +842,23 @@ button {
 }
 
 .stress-item strong {
+  color: var(--text);
   font-size: 12px;
 }
 
 .stress-item p {
+  margin-top: 3px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-top: 3px;
 }
 
 .stress-color {
   width: 12px;
   height: 36px;
+
   flex: 0 0 12px;
+
   border-radius: 5px;
 }
 
@@ -635,9 +881,11 @@ button {
 .formula {
   margin-top: 20px;
   padding: 16px;
-  border-radius: 9px;
+
   background: rgba(25, 184, 166, 0.08);
+
   border: 1px solid rgba(25, 184, 166, 0.2);
+  border-radius: 9px;
 }
 
 .formula span,
@@ -651,68 +899,86 @@ button {
 }
 
 .formula strong {
+  margin-top: 8px;
+
   color: var(--teal-light);
   font-size: 13px;
-  margin-top: 8px;
+  line-height: 1.6;
 }
 
 
-/* ==========================================
-   GEOAI CLUSTERS
-========================================== */
+/* -------------------------
+   13. GEOAI CLUSTERS
+------------------------- */
 
 .cluster-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 13px;
 }
 
 .cluster-card {
-  background: var(--surface-light);
+  min-width: 0;
+
+  padding: 17px;
+
+  background: var(--panel-hover);
   border: 1px solid var(--border);
-  padding: 16px;
   border-radius: 10px;
 }
 
 .cluster-number {
   display: block;
-  color: var(--teal-light);
-  font-size: 20px;
-  font-weight: 750;
+
   margin-bottom: 12px;
+
+  color: var(--teal-light);
+
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .cluster-card strong {
+  color: var(--white);
   font-size: 12px;
 }
 
 .cluster-card p {
+  margin-top: 6px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-top: 6px;
+  line-height: 1.65;
 }
 
 
-/* ==========================================
-   DIGITAL TWIN
-========================================== */
+/* -------------------------
+   14. DIGITAL TWIN
+------------------------- */
 
 .placeholder-box {
-  min-height: 190px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+
+  min-height: 200px;
+  padding: 22px;
+
   text-align: center;
-  padding: 20px;
+
   border: 1px dashed rgba(145, 167, 181, 0.35);
   border-radius: 10px;
 }
 
 .placeholder-icon {
+  margin-bottom: 10px;
+
   color: var(--teal-light);
-  font-size: 31px;
-  margin-bottom: 9px;
+  font-size: 32px;
 }
 
 .placeholder-box strong {
@@ -720,10 +986,12 @@ button {
 }
 
 .placeholder-box p {
-  max-width: 310px;
+  max-width: 330px;
+  margin-top: 8px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-top: 7px;
+  line-height: 1.7;
 }
 
 .scenario-list {
@@ -733,10 +1001,14 @@ button {
 
 .scenario-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+
   padding: 15px 0;
+
   border-bottom: 1px solid var(--border);
+
   font-size: 11px;
 }
 
@@ -750,85 +1022,110 @@ button {
 }
 
 
-/* ==========================================
-   PROJECT MODULES
-========================================== */
+/* -------------------------
+   15. PROJECT MODULES
+------------------------- */
 
 .module-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 15px;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 16px;
 }
 
 .module-card {
   position: relative;
-  overflow: hidden;
-  padding: 20px;
-  background: var(--surface);
+
+  min-width: 0;
+  padding: 21px;
+
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: 0.2s ease;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .module-card:hover {
-  border-color: rgba(25, 184, 166, 0.4);
   transform: translateY(-3px);
+  border-color: rgba(25, 184, 166, 0.4);
 }
 
 .module-number {
   color: var(--teal-light);
+
   font-size: 25px;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .module-card h3 {
   margin-top: 12px;
+
+  color: var(--white);
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .module-card p {
-  min-height: 55px;
+  min-height: 60px;
+
+  margin-top: 8px;
+
   color: var(--muted);
   font-size: 11px;
-  margin-top: 8px;
+  line-height: 1.7;
 }
 
 .module-type {
   display: inline-block;
+
   margin-top: 14px;
+
   color: var(--teal-light);
+
   font-size: 9px;
+  font-weight: 700;
   letter-spacing: 1px;
 }
 
 
-/* ==========================================
-   REPORTS
-========================================== */
+/* -------------------------
+   16. REPORTS
+------------------------- */
 
 .report-row {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 0;
+
+  padding: 15px 0;
+
   border-bottom: 1px solid var(--border);
 }
 
 .report-row:last-child {
-  border-bottom: 0;
+  border-bottom: none;
 }
 
 .report-icon {
+  display: grid;
+  place-items: center;
+
   width: 43px;
   height: 43px;
   flex: 0 0 43px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  background: var(--surface-light);
+
   color: var(--teal-light);
+  background: var(--panel-hover);
+
+  border-radius: 9px;
+
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .report-info {
@@ -842,13 +1139,15 @@ button {
 }
 
 .report-info strong {
+  color: var(--white);
   font-size: 12px;
 }
 
 .report-info span {
+  margin-top: 3px;
+
   color: var(--muted);
   font-size: 10px;
-  margin-top: 3px;
 }
 
 .report-state {
@@ -858,9 +1157,9 @@ button {
 }
 
 
-/* ==========================================
-   FOOTER
-========================================== */
+/* -------------------------
+   17. FOOTER
+------------------------- */
 
 .footer {
   display: flex;
@@ -868,8 +1167,10 @@ button {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 15px;
+
   margin-top: 45px;
   padding: 22px 0;
+
   border-top: 1px solid var(--border);
 }
 
@@ -879,6 +1180,8 @@ button {
 }
 
 .footer div strong {
+  color: var(--white);
+
   font-size: 12px;
   letter-spacing: 2px;
 }
@@ -891,45 +1194,51 @@ button {
 }
 
 
-/* ==========================================
-   RESPONSIVE TABLET
-========================================== */
+/* -------------------------
+   18. TABLET RESPONSIVENESS
+------------------------- */
 
 @media (max-width: 1100px) {
 
   :root {
-    --sidebar-width: 220px;
+    --sidebar-width: 230px;
   }
 
   .main-content {
-    padding: 0 22px;
+    padding: 0 23px;
   }
 
   .kpi-grid,
   .indicator-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .module-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
   .cluster-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .module-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
 }
 
 
-/* ==========================================
-   RESPONSIVE MOBILE
-========================================== */
+/* -------------------------
+   19. MOBILE RESPONSIVENESS
+------------------------- */
 
 @media (max-width: 760px) {
 
+  :root {
+    --sidebar-width: 260px;
+  }
+
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
   }
 
   .sidebar.sidebar-open {
@@ -946,7 +1255,7 @@ button {
   }
 
   .topbar {
-    min-height: 78px;
+    min-height: 76px;
   }
 
   .topbar h1 {
@@ -979,19 +1288,21 @@ button {
 
   .kpi-grid,
   .indicator-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .cluster-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
   .module-grid {
     grid-template-columns: 1fr;
   }
 
-  .cluster-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   #bayadMap {
-    height: 280px;
+    height: 290px;
   }
 
   .date-chip {
@@ -1006,9 +1317,9 @@ button {
 }
 
 
-/* ==========================================
-   SMALL MOBILE
-========================================== */
+/* -------------------------
+   20. SMALL MOBILE
+------------------------- */
 
 @media (max-width: 420px) {
 
@@ -1017,10 +1328,7 @@ button {
   }
 
   .kpi-grid,
-  .indicator-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .indicator-grid,
   .cluster-grid {
     grid-template-columns: 1fr;
   }
@@ -1029,13 +1337,20 @@ button {
     padding: 15px;
   }
 
-  .kpi-card {
-    padding: 15px;
+  .kpi-card,
+  .indicator-card,
+  .module-card {
+    padding: 16px;
   }
 
   .report-row {
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+
+  .map-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
 }
