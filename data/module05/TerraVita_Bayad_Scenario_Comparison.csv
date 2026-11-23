@@ -1,0 +1,4 @@
+scenario,buffer_radius_m,candidate_count,high_priority_area_km2,covered_priority_area_km2,priority_area_coverage_percent
+250m planning zone,250,20,44.398,0.3116,0.701833415919636
+500m planning zone,500,20,44.398,0.4144,0.9333753772692464
+1000m planning zone,1000,20,44.398,0.6768,1.5243929906752556
