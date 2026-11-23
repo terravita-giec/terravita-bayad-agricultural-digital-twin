@@ -1,56 +1,86 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TerraVita | Bayad Agricultural Digital Twin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="style.css">
+  <title>TerraVita | Bayad Agricultural Digital Twin</title>
+  <meta name="description" content="TerraVita's satellite-based agricultural and watershed resilience intelligence platform for Bayad Taluka, Gujarat.">
 
-    <!-- Leaflet GIS Map -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="dashboard">
+  <div class="app-shell">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
 
-        <div class="brand">
-            <div class="brand-icon">TV</div>
-            <div>
-                <h2>TERRAVITA</h2>
-                <p>GEOSPATIAL INTELLIGENCE</p>
-            </div>
+      <a href="#overview" class="brand">
+        <div class="brand-mark">TV</div>
+        <div class="brand-copy">
+          <strong>TERRAVITA</strong>
+          <span>GEOSPATIAL INTELLIGENCE</span>
         </div>
+      </a>
 
-        <div class="sidebar-label">WORKSPACE</div>
+      <div class="sidebar-label">WORKSPACE</div>
 
-        <nav class="navigation">
-            <a href="#overview" class="nav-item active">▦ Overview</a>
-            <a href="#map-section" class="nav-item">◎ GIS Map</a>
-            <a href="#satellite" class="nav-item">◈ Satellite Indicators</a>
-            <a href="#stress" class="nav-item">▥ Agricultural Stress</a>
-            <a href="#geoai" class="nav-item">⌘ GeoAI Clusters</a>
-            <a href="#scenarios" class="nav-item">◇ Digital Twin</a>
-            <a href="#reports" class="nav-item">▤ Reports</a>
-        </nav>
+      <nav class="navigation">
+        <a href="#overview" class="nav-link active">
+          <span class="nav-icon">⌂</span>
+          <span>Overview</span>
+        </a>
 
-        <div class="sidebar-bottom">
-            <div class="project-status">
-                <span class="status-dot"></span>
-                Prototype Dashboard
-            </div>
-            <p>TerraVita Environmental & Geospatial Consultancy</p>
-            <p class="version">VERSION 1.0 | 2026</p>
+        <a href="#study-area" class="nav-link">
+          <span class="nav-icon">◎</span>
+          <span>Study Area</span>
+        </a>
+
+        <a href="#satellite" class="nav-link">
+          <span class="nav-icon">◈</span>
+          <span>Satellite Indicators</span>
+        </a>
+
+        <a href="#stress" class="nav-link">
+          <span class="nav-icon">▥</span>
+          <span>Agricultural Stress</span>
+        </a>
+
+        <a href="#geoai" class="nav-link">
+          <span class="nav-icon">⌘</span>
+          <span>GeoAI Clusters</span>
+        </a>
+
+        <a href="#digital-twin" class="nav-link">
+          <span class="nav-icon">◇</span>
+          <span>Digital Twin</span>
+        </a>
+
+        <a href="#modules" class="nav-link">
+          <span class="nav-icon">▤</span>
+          <span>Project Modules</span>
+        </a>
+
+        <a href="#reports" class="nav-link">
+          <span class="nav-icon">▧</span>
+          <span>Reports & Outputs</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-status">
+          <span class="status-dot"></span>
+          <span>Research Prototype</span>
         </div>
+        <p>Satellite + GIS + AI</p>
+        <p class="sidebar-location">Bayad, Gujarat, India</p>
+      </div>
 
     </aside>
 
@@ -58,591 +88,606 @@
     <!-- MAIN CONTENT -->
     <main class="main-content">
 
-        <!-- TOP BAR -->
-        <header class="topbar">
-            <div>
-                <p class="breadcrumb">PROJECTS / AGRICULTURAL INTELLIGENCE</p>
-                <h1>Bayad Agricultural Digital Twin</h1>
-                <p class="subtitle">
-                    Satellite-based agricultural monitoring and watershed resilience
-                </p>
+      <!-- TOP BAR -->
+      <header class="topbar">
+
+        <div class="topbar-left">
+          <button class="menu-button" id="menuButton" aria-label="Toggle navigation">
+            ☰
+          </button>
+
+          <div>
+            <div class="breadcrumb">TerraVita / Projects / Bayad</div>
+            <h1>Agricultural Digital Twin</h1>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <span class="project-tag">PILOT PROJECT 01</span>
+          <div class="profile-mark">TV</div>
+        </div>
+
+      </header>
+
+
+      <!-- OVERVIEW -->
+      <section class="page-section" id="overview">
+
+        <div class="welcome-row">
+          <div>
+            <p class="eyebrow">WATERSHED RESILIENCE INTELLIGENCE</p>
+            <h2>Bayad Agricultural Intelligence Platform</h2>
+            <p class="section-description">
+              Satellite-based environmental monitoring, agricultural stress
+              assessment and spatial intervention planning.
+            </p>
+          </div>
+
+          <div class="date-chip">
+            <span class="status-dot"></span>
+            Kharif 2025 Pilot
+          </div>
+        </div>
+
+
+        <!-- KPI CARDS -->
+        <div class="kpi-grid">
+
+          <article class="kpi-card">
+            <div class="kpi-top">
+              <span>Study Region</span>
+              <span class="kpi-symbol">⌖</span>
+            </div>
+            <div class="kpi-value">Bayad</div>
+            <div class="kpi-note">Aravalli District, Gujarat</div>
+          </article>
+
+          <article class="kpi-card">
+            <div class="kpi-top">
+              <span>Analysis Modules</span>
+              <span class="kpi-symbol">▦</span>
+            </div>
+            <div class="kpi-value">05</div>
+            <div class="kpi-note">GIS, Remote Sensing and GeoAI</div>
+          </article>
+
+          <article class="kpi-card">
+            <div class="kpi-top">
+              <span>Satellite Platform</span>
+              <span class="kpi-symbol">◉</span>
+            </div>
+            <div class="kpi-value">Sentinel-2</div>
+            <div class="kpi-note">Surface reflectance analysis</div>
+          </article>
+
+          <article class="kpi-card">
+            <div class="kpi-top">
+              <span>Decision Support</span>
+              <span class="kpi-symbol">⌘</span>
+            </div>
+            <div class="kpi-value">GeoAI</div>
+            <div class="kpi-note">Exploratory spatial prioritisation</div>
+          </article>
+
+        </div>
+
+
+        <!-- MAIN DASHBOARD GRID -->
+        <div class="content-grid">
+
+          <article class="panel map-panel" id="study-area">
+
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">GEOGRAPHIC CONTEXT</p>
+                <h3>Study Area Overview</h3>
+              </div>
+              <span class="panel-badge">Bayad Taluka</span>
             </div>
 
-            <div class="topbar-right">
-                <span class="live-indicator">
-                    <span class="status-dot"></span>
-                    SYSTEM ONLINE
-                </span>
-                <div class="user-profile">TV</div>
+            <div id="bayadMap" aria-label="Map of Bayad study area"></div>
+
+            <div class="map-footer">
+              <span><i class="legend-dot teal"></i> Study area boundary</span>
+              <span class="map-note" id="mapStatus">
+                Loading boundary layer...
+              </span>
             </div>
-        </header>
+
+          </article>
 
 
-        <!-- OVERVIEW -->
-        <section id="overview">
+          <article class="panel project-panel">
 
-            <div class="section-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">PROJECT INFORMATION</p>
+                <h3>Research Framework</h3>
+              </div>
+            </div>
+
+            <div class="info-list">
+
+              <div class="info-item">
+                <span>Project</span>
+                <strong>Bayad Agricultural Digital Twin</strong>
+              </div>
+
+              <div class="info-item">
+                <span>Location</span>
+                <strong>Aravalli, Gujarat, India</strong>
+              </div>
+
+              <div class="info-item">
+                <span>Primary data</span>
+                <strong>Satellite and terrain datasets</strong>
+              </div>
+
+              <div class="info-item">
+                <span>Analysis approach</span>
+                <strong>GIS + Remote Sensing + GeoAI</strong>
+              </div>
+
+              <div class="info-item">
+                <span>Project status</span>
+                <strong class="text-teal">Research prototype</strong>
+              </div>
+
+            </div>
+
+            <div class="notice">
+              <strong>Scientific note</strong>
+              <p>
+                This prototype supports spatial screening and planning.
+                Intervention locations require field verification and
+                engineering assessment.
+              </p>
+            </div>
+
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- SATELLITE INDICATORS -->
+      <section class="page-section" id="satellite">
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">REMOTE SENSING ANALYSIS</p>
+            <h2>Satellite Indicators</h2>
+            <p class="section-description">
+              Spectral indicators derived from Sentinel-2 surface reflectance.
+            </p>
+          </div>
+        </div>
+
+        <div class="indicator-grid">
+
+          <article class="indicator-card">
+            <div class="indicator-icon">ND</div>
+            <h3>NDVI</h3>
+            <p>Vegetation greenness and relative vegetation condition.</p>
+            <span class="data-state">Data connection pending</span>
+          </article>
+
+          <article class="indicator-card">
+            <div class="indicator-icon">NW</div>
+            <h3>NDWI</h3>
+            <p>Surface water-related spectral response.</p>
+            <span class="data-state">Data connection pending</span>
+          </article>
+
+          <article class="indicator-card">
+            <div class="indicator-icon">MW</div>
+            <h3>MNDWI</h3>
+            <p>Water-feature enhancement using green and SWIR bands.</p>
+            <span class="data-state">Data connection pending</span>
+          </article>
+
+          <article class="indicator-card">
+            <div class="indicator-icon">NM</div>
+            <h3>NDMI</h3>
+            <p>Vegetation moisture-related spectral response.</p>
+            <span class="data-state">Data connection pending</span>
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- AGRICULTURAL STRESS -->
+      <section class="page-section" id="stress">
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">AGRICULTURAL MONITORING</p>
+            <h2>Agricultural Stress Assessment</h2>
+            <p class="section-description">
+              Relative vegetation and moisture stress screening for Kharif 2025.
+            </p>
+          </div>
+        </div>
+
+        <div class="content-grid two-column">
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Stress Classification</h3>
+              <span class="panel-badge">Relative screening</span>
+            </div>
+
+            <div class="stress-list">
+              <div class="stress-item">
+                <span class="stress-color lower"></span>
                 <div>
-                    <h2>Regional Overview</h2>
-                    <p>Bayad Taluka, Aravalli District, Gujarat, India</p>
+                  <strong>Lower relative stress</strong>
+                  <p>Relatively lower index-derived stress</p>
                 </div>
+              </div>
 
-                <span class="date-label">KHARIF 2025 DEMO</span>
-            </div>
-
-
-            <!-- KPI CARDS -->
-            <div class="kpi-grid">
-
-                <div class="kpi-card">
-                    <div class="kpi-top">
-                        <span>Study Area</span>
-                        <span class="kpi-icon">⌖</span>
-                    </div>
-                    <h3>457.66 <small>km²</small></h3>
-                    <p>Provisional boundary area</p>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-top">
-                        <span>Satellite Platform</span>
-                        <span class="kpi-icon">◈</span>
-                    </div>
-                    <h3>Sentinel-2</h3>
-                    <p>Surface reflectance imagery</p>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-top">
-                        <span>Monitoring Period</span>
-                        <span class="kpi-icon">◷</span>
-                    </div>
-                    <h3>2021–2025</h3>
-                    <p>Seasonal observations</p>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-top">
-                        <span>GeoAI Method</span>
-                        <span class="kpi-icon">⌘</span>
-                    </div>
-                    <h3>K-Means</h3>
-                    <p>Exploratory clustering</p>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- GIS MAP -->
-        <section id="map-section" class="content-section">
-
-            <div class="section-heading">
+              <div class="stress-item">
+                <span class="stress-color moderate"></span>
                 <div>
-                    <h2>Geospatial Intelligence Map</h2>
-                    <p>Study-area location and spatial monitoring interface</p>
+                  <strong>Moderate relative stress</strong>
+                  <p>Intermediate relative stress values</p>
                 </div>
-                <span class="map-tag">GIS VIEWER</span>
+              </div>
+
+              <div class="stress-item">
+                <span class="stress-color elevated"></span>
+                <div>
+                  <strong>Elevated relative stress</strong>
+                  <p>Higher relative stress values</p>
+                </div>
+              </div>
+
+              <div class="stress-item">
+                <span class="stress-color high"></span>
+                <div>
+                  <strong>Higher relative stress</strong>
+                  <p>Highest relative stress values</p>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Assessment Method</h3>
             </div>
 
-            <div class="map-layout">
-
-                <div class="map-container">
-                    <div id="map"></div>
-
-                    <div class="map-overlay">
-                        <span class="map-overlay-dot"></span>
-                        BAYAD STUDY AREA
-                    </div>
-                </div>
-
-                <div class="map-controls">
-
-                    <h3>Map Layers</h3>
-
-                    <label class="layer-option">
-                        <input type="checkbox" checked>
-                        <span class="layer-color boundary"></span>
-                        Study Area
-                    </label>
-
-                    <label class="layer-option">
-                        <input type="checkbox">
-                        <span class="layer-color vegetation"></span>
-                        NDVI
-                    </label>
-
-                    <label class="layer-option">
-                        <input type="checkbox">
-                        <span class="layer-color moisture"></span>
-                        NDMI
-                    </label>
-
-                    <label class="layer-option">
-                        <input type="checkbox">
-                        <span class="layer-color water"></span>
-                        NDWI / MNDWI
-                    </label>
-
-                    <label class="layer-option">
-                        <input type="checkbox">
-                        <span class="layer-color stress"></span>
-                        Agricultural Stress
-                    </label>
-
-                    <label class="layer-option">
-                        <input type="checkbox">
-                        <span class="layer-color geoai"></span>
-                        GeoAI Clusters
-                    </label>
-
-                    <div class="map-note">
-                        <strong>Data connection</strong>
-                        <p>
-                            Connect your Module 01 GeoJSON and Module 02–05
-                            GeoTIFF outputs to display actual spatial layers.
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <p class="map-disclaimer">
-                Map outline is an illustrative extent, not a verified administrative boundary.
+            <p class="panel-description">
+              The pilot combines percentile-normalised NDVI and NDMI
+              stress indicators over the vegetated-pixel subset.
             </p>
 
-        </section>
-
-
-        <!-- SATELLITE INDICATORS -->
-        <section id="satellite" class="content-section">
-
-            <div class="section-heading">
-                <div>
-                    <h2>Satellite Indicators</h2>
-                    <p>Multi-spectral agricultural monitoring</p>
-                </div>
+            <div class="formula">
+              <span>Relative Agricultural Stress</span>
+              <strong>0.50 × NDVI Stress + 0.50 × NDMI Stress</strong>
             </div>
 
-            <div class="indicator-grid">
-
-                <div class="indicator-card">
-                    <span class="indicator-symbol">NDVI</span>
-                    <h3>Vegetation Index</h3>
-                    <div class="indicator-visual ndvi-gradient"></div>
-                    <p>Vegetation condition and greenness</p>
-                </div>
-
-                <div class="indicator-card">
-                    <span class="indicator-symbol">NDMI</span>
-                    <h3>Moisture Index</h3>
-                    <div class="indicator-visual ndmi-gradient"></div>
-                    <p>Vegetation moisture-related response</p>
-                </div>
-
-                <div class="indicator-card">
-                    <span class="indicator-symbol">NDWI</span>
-                    <h3>Water Index</h3>
-                    <div class="indicator-visual ndwi-gradient"></div>
-                    <p>Surface water-related spectral response</p>
-                </div>
-
-                <div class="indicator-card">
-                    <span class="indicator-symbol">MNDWI</span>
-                    <h3>Water Mapping</h3>
-                    <div class="indicator-visual mndwi-gradient"></div>
-                    <p>Open-water feature screening</p>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- AGRICULTURAL STRESS -->
-        <section id="stress" class="content-section">
-
-            <div class="section-heading">
-                <div>
-                    <h2>Agricultural Stress Intelligence</h2>
-                    <p>Relative vegetation and moisture stress screening</p>
-                </div>
-                <span class="demo-label">DEMO VALUES</span>
-            </div>
-
-            <div class="stress-panel">
-
-                <div class="stress-chart">
-                    <h3>Stress Classification</h3>
-
-                    <div class="stress-row">
-                        <span>Lower Relative Stress</span>
-                        <div class="progress">
-                            <div class="progress-fill low" style="width:25%"></div>
-                        </div>
-                        <b>25%</b>
-                    </div>
-
-                    <div class="stress-row">
-                        <span>Moderate Relative Stress</span>
-                        <div class="progress">
-                            <div class="progress-fill moderate" style="width:30%"></div>
-                        </div>
-                        <b>30%</b>
-                    </div>
-
-                    <div class="stress-row">
-                        <span>Elevated Relative Stress</span>
-                        <div class="progress">
-                            <div class="progress-fill elevated" style="width:25%"></div>
-                        </div>
-                        <b>25%</b>
-                    </div>
-
-                    <div class="stress-row">
-                        <span>Higher Relative Stress</span>
-                        <div class="progress">
-                            <div class="progress-fill high" style="width:20%"></div>
-                        </div>
-                        <b>20%</b>
-                    </div>
-
-                    <p class="chart-footnote">
-                        Illustrative distribution only. Replace with Module 04 statistics.
-                    </p>
-                </div>
-
-
-                <div class="stress-insight">
-                    <span class="insight-label">ANALYTICAL INTERPRETATION</span>
-                    <h3>Vegetation Stress Screening</h3>
-                    <p>
-                        The model combines relative NDVI and NDMI stress
-                        indicators to identify areas requiring further
-                        agricultural investigation.
-                    </p>
-
-                    <div class="insight-box">
-                        <strong>Methodology</strong>
-                        <p>50% NDVI stress + 50% NDMI stress</p>
-                    </div>
-
-                    <div class="insight-box">
-                        <strong>Interpretation</strong>
-                        <p>Relative screening, not calibrated drought diagnosis.</p>
-                    </div>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- GEOAI -->
-        <section id="geoai" class="content-section">
-
-            <div class="section-heading">
-                <div>
-                    <h2>GeoAI Spatial Clusters</h2>
-                    <p>Unsupervised agricultural landscape classification</p>
-                </div>
-                <span class="map-tag">K-MEANS MODEL</span>
-            </div>
-
-            <div class="cluster-grid">
-
-                <div class="cluster-card">
-                    <span class="cluster-number cluster-one">01</span>
-                    <h3>Cluster 01</h3>
-                    <p>Spatial group 1</p>
-                </div>
-
-                <div class="cluster-card">
-                    <span class="cluster-number cluster-two">02</span>
-                    <h3>Cluster 02</h3>
-                    <p>Spatial group 2</p>
-                </div>
-
-                <div class="cluster-card">
-                    <span class="cluster-number cluster-three">03</span>
-                    <h3>Cluster 03</h3>
-                    <p>Spatial group 3</p>
-                </div>
-
-                <div class="cluster-card">
-                    <span class="cluster-number cluster-four">04</span>
-                    <h3>Cluster 04</h3>
-                    <p>Spatial group 4</p>
-                </div>
-
-            </div>
-
-            <p class="method-note">
-                Clusters are exploratory groups, not verified crop or land-use classes.
-                Interpret them using cluster statistics and field observations.
+            <p class="small-note">
+              These classes are relative to the selected study period.
+              They are not calibrated drought thresholds or direct
+              measurements of crop yield.
             </p>
+          </article>
 
-        </section>
+        </div>
 
-
-        <!-- DIGITAL TWIN SCENARIOS -->
-        <section id="scenarios" class="content-section">
-
-            <div class="section-heading">
-                <div>
-                    <h2>Digital Twin Scenario Simulator</h2>
-                    <p>Explore hypothetical intervention coverage</p>
-                </div>
-                <span class="map-tag">SCENARIO MODEL</span>
-            </div>
-
-            <div class="scenario-layout">
-
-                <div class="scenario-controls">
-
-                    <h3>Intervention Parameters</h3>
-
-                    <label for="buffer">Intervention Buffer</label>
-                    <div class="range-value">
-                        <span>250 m</span>
-                        <strong id="buffer-value">500 m</strong>
-                        <span>1000 m</span>
-                    </div>
-                    <input
-                        type="range"
-                        id="buffer"
-                        min="250"
-                        max="1000"
-                        step="250"
-                        value="500"
-                    >
-
-                    <label for="priority">Priority Threshold</label>
-                    <div class="range-value">
-                        <span>50%</span>
-                        <strong id="priority-value">75%</strong>
-                        <span>100%</span>
-                    </div>
-                    <input
-                        type="range"
-                        id="priority"
-                        min="50"
-                        max="100"
-                        step="5"
-                        value="75"
-                    >
-
-                    <button id="run-scenario" class="primary-button">
-                        Run Scenario
-                    </button>
-
-                    <p class="scenario-warning">
-                        Demonstration controls only. Connect Module 05
-                        spatial calculations for actual scenario results.
-                    </p>
-
-                </div>
+      </section>
 
 
-                <div class="scenario-results">
+      <!-- GEOAI -->
+      <section class="page-section" id="geoai">
 
-                    <h3>Scenario Output</h3>
-
-                    <div class="result-card">
-                        <span>Selected Buffer</span>
-                        <strong id="result-buffer">500 m</strong>
-                    </div>
-
-                    <div class="result-card">
-                        <span>Priority Threshold</span>
-                        <strong id="result-priority">75%</strong>
-                    </div>
-
-                    <div class="result-card">
-                        <span>Simulation Status</span>
-                        <strong id="result-status">Not calculated</strong>
-                    </div>
-
-                    <div class="scenario-message" id="scenario-message">
-                        Adjust the parameters and run the demonstration.
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- REPORTS -->
-        <section id="reports" class="content-section">
-
-            <div class="section-heading">
-                <div>
-                    <h2>Reports & Data Outputs</h2>
-                    <p>Project deliverables and analytical outputs</p>
-                </div>
-            </div>
-
-            <div class="report-grid">
-
-                <div class="report-card">
-                    <div class="report-icon">▤</div>
-                    <div>
-                        <h3>Study Area Report</h3>
-                        <p>Module 01 | AOI verification</p>
-                    </div>
-                    <span class="report-status">Connect file</span>
-                </div>
-
-                <div class="report-card">
-                    <div class="report-icon">◈</div>
-                    <div>
-                        <h3>Satellite Indices</h3>
-                        <p>Module 02 | GeoTIFF outputs</p>
-                    </div>
-                    <span class="report-status">Connect file</span>
-                </div>
-
-                <div class="report-card">
-                    <div class="report-icon">⌁</div>
-                    <div>
-                        <h3>Rainfall & Hydrology</h3>
-                        <p>Module 03 | Terrain and rainfall</p>
-                    </div>
-                    <span class="report-status">Connect file</span>
-                </div>
-
-                <div class="report-card">
-                    <div class="report-icon">⌘</div>
-                    <div>
-                        <h3>GeoAI Analysis</h3>
-                        <p>Module 04 | Stress and clusters</p>
-                    </div>
-                    <span class="report-status">Connect file</span>
-                </div>
-
-                <div class="report-card">
-                    <div class="report-icon">◇</div>
-                    <div>
-                        <h3>Digital Twin Scenarios</h3>
-                        <p>Module 05 | Priority assessment</p>
-                    </div>
-                    <span class="report-status">Connect file</span>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- FOOTER -->
-        <footer class="footer">
-            <div>
-                <strong>TERRAVITA</strong>
-                <span>Satellite + GIS + AI</span>
-            </div>
-
-            <p>
-                Agricultural Digital Twin | Bayad, Gujarat, India
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SPATIAL MACHINE LEARNING</p>
+            <h2>GeoAI Clusters</h2>
+            <p class="section-description">
+              Exploratory unsupervised spatial segmentation.
             </p>
+          </div>
+        </div>
 
-            <p>© 2026 TerraVita</p>
-        </footer>
+        <article class="panel">
+          <div class="panel-heading">
+            <h3>K-Means Spatial Grouping</h3>
+            <span class="panel-badge">4-cluster model</span>
+          </div>
+
+          <div class="cluster-grid">
+            <div class="cluster-card">
+              <span class="cluster-number">01</span>
+              <strong>Cluster 1</strong>
+              <p>View raster output to interpret this group.</p>
+            </div>
+
+            <div class="cluster-card">
+              <span class="cluster-number">02</span>
+              <strong>Cluster 2</strong>
+              <p>View raster output to interpret this group.</p>
+            </div>
+
+            <div class="cluster-card">
+              <span class="cluster-number">03</span>
+              <strong>Cluster 3</strong>
+              <p>View raster output to interpret this group.</p>
+            </div>
+
+            <div class="cluster-card">
+              <span class="cluster-number">04</span>
+              <strong>Cluster 4</strong>
+              <p>View raster output to interpret this group.</p>
+            </div>
+          </div>
+
+          <p class="small-note">
+            Cluster numbers are categorical identifiers, not rankings.
+            Their environmental meaning must be interpreted from the
+            cluster feature statistics.
+          </p>
+        </article>
+
+      </section>
+
+
+      <!-- DIGITAL TWIN -->
+      <section class="page-section" id="digital-twin">
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SPATIAL DECISION SUPPORT</p>
+            <h2>Digital Twin & Intervention Planning</h2>
+            <p class="section-description">
+              Preliminary spatial prioritisation and hypothetical
+              planning scenarios.
+            </p>
+          </div>
+        </div>
+
+        <div class="content-grid two-column">
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Intervention Priority</h3>
+              <span class="panel-badge">Module 05</span>
+            </div>
+
+            <div class="placeholder-box">
+              <span class="placeholder-icon">▧</span>
+              <strong>Priority raster not connected</strong>
+              <p>
+                Connect the Module 05 GeoTIFF through the Python
+                dashboard to view the actual spatial priority surface.
+              </p>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Scenario Planning</h3>
+              <span class="panel-badge">Hypothetical</span>
+            </div>
+
+            <div class="scenario-list">
+              <div class="scenario-row">
+                <span>250 m planning buffer</span>
+                <strong>Awaiting data</strong>
+              </div>
+              <div class="scenario-row">
+                <span>500 m planning buffer</span>
+                <strong>Awaiting data</strong>
+              </div>
+              <div class="scenario-row">
+                <span>1,000 m planning buffer</span>
+                <strong>Awaiting data</strong>
+              </div>
+            </div>
+
+            <p class="small-note">
+              Buffer coverage indicates spatial overlap only. It does
+              not represent measured recharge, water capture or
+              agricultural improvement.
+            </p>
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- PROJECT MODULES -->
+      <section class="page-section" id="modules">
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TECHNICAL WORKFLOW</p>
+            <h2>Project Modules</h2>
+            <p class="section-description">
+              Five connected stages of the Bayad pilot project.
+            </p>
+          </div>
+        </div>
+
+        <div class="module-grid">
+
+          <article class="module-card">
+            <span class="module-number">01</span>
+            <h3>AOI Verification</h3>
+            <p>Administrative boundary construction, geometry checks and study-area preparation.</p>
+            <span class="module-type">GIS FOUNDATION</span>
+          </article>
+
+          <article class="module-card">
+            <span class="module-number">02</span>
+            <h3>Satellite Indices</h3>
+            <p>Sentinel-2 seasonal composites and spectral index generation.</p>
+            <span class="module-type">REMOTE SENSING</span>
+          </article>
+
+          <article class="module-card">
+            <span class="module-number">03</span>
+            <h3>Rainfall & Terrain</h3>
+            <p>Rainfall analysis, DEM processing and terrain-derived drainage indicators.</p>
+            <span class="module-type">HYDRO-CLIMATIC GIS</span>
+          </article>
+
+          <article class="module-card">
+            <span class="module-number">04</span>
+            <h3>Agricultural Stress & GeoAI</h3>
+            <p>Relative stress assessment and exploratory K-Means clustering.</p>
+            <span class="module-type">GEOAI ANALYSIS</span>
+          </article>
+
+          <article class="module-card">
+            <span class="module-number">05</span>
+            <h3>Digital Twin Scenarios</h3>
+            <p>Spatial prioritisation, candidate locations and hypothetical planning zones.</p>
+            <span class="module-type">DECISION SUPPORT</span>
+          </article>
+
+        </div>
+
+      </section>
+
+
+      <!-- REPORTS -->
+      <section class="page-section" id="reports">
+
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">PROJECT DOCUMENTATION</p>
+            <h2>Reports & Outputs</h2>
+            <p class="section-description">
+              Portfolio maps, technical summaries and downloadable outputs.
+            </p>
+          </div>
+        </div>
+
+        <article class="panel">
+          <div class="report-row">
+            <div class="report-icon">PNG</div>
+            <div class="report-info">
+              <strong>Bayad Study Area Map</strong>
+              <span>Module 01 · Portfolio map</span>
+            </div>
+            <span class="report-state">Connect file</span>
+          </div>
+
+          <div class="report-row">
+            <div class="report-icon">CSV</div>
+            <div class="report-info">
+              <strong>Module 04 Statistics</strong>
+              <span>Agricultural stress and GeoAI statistics</span>
+            </div>
+            <span class="report-state">Connect file</span>
+          </div>
+
+          <div class="report-row">
+            <div class="report-icon">GPKG</div>
+            <div class="report-info">
+              <strong>Intervention Candidates</strong>
+              <span>Module 05 · Spatial candidate layer</span>
+            </div>
+            <span class="report-state">Connect file</span>
+          </div>
+
+        </article>
+
+      </section>
+
+
+      <!-- FOOTER -->
+      <footer class="footer">
+        <div>
+          <strong>TERRAVITA</strong>
+          <span>Environmental & Geospatial Consultancy</span>
+        </div>
+
+        <p>
+          Satellite + GIS + AI for Environmental, Urban
+          & Geological Decision-Making
+        </p>
+
+        <span class="copyright">© 2026 TerraVita</span>
+      </footer>
 
     </main>
 
-</div>
+  </div>
 
 
-<!-- MAP INITIALIZATION AND DEMO CONTROLS -->
-<script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    // Illustrative map extent only.
-    // Replace with the verified Module 01 GeoJSON boundary.
+  <script>
+    // Mobile sidebar
+    const sidebar = document.getElementById("sidebar");
+    const menuButton = document.getElementById("menuButton");
 
-    const map = L.map('map').setView([23.42, 73.28], 10);
-
-    L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-            attribution: '&copy; OpenStreetMap contributors'
-        }
-    ).addTo(map);
-
-    const approximateExtent = L.rectangle(
-        [
-            [23.10528085, 72.97118810],
-            [23.74196977, 73.59965762]
-        ],
-        {
-            color: '#18b6a4',
-            weight: 2,
-            fillColor: '#18b6a4',
-            fillOpacity: 0.08,
-            dashArray: '7, 5'
-        }
-    ).addTo(map);
-
-    approximateExtent.bindPopup(
-        'Illustrative study-area extent. Load the verified Module 01 GeoJSON for the actual boundary.'
-    );
-
-    map.fitBounds(approximateExtent.getBounds());
-
-
-    // Scenario controls
-
-    const buffer = document.getElementById('buffer');
-    const priority = document.getElementById('priority');
-
-    const bufferValue = document.getElementById('buffer-value');
-    const priorityValue = document.getElementById('priority-value');
-
-    buffer.addEventListener('input', function () {
-        bufferValue.textContent = this.value + ' m';
+    menuButton.addEventListener("click", () => {
+      sidebar.classList.toggle("sidebar-open");
     });
 
-    priority.addEventListener('input', function () {
-        priorityValue.textContent = this.value + '%';
-    });
-
-    document.getElementById('run-scenario').addEventListener('click', function () {
-
-        document.getElementById('result-buffer').textContent =
-            buffer.value + ' m';
-
-        document.getElementById('result-priority').textContent =
-            priority.value + '%';
-
-        document.getElementById('result-status').textContent =
-            'Parameters selected';
-
-        document.getElementById('scenario-message').textContent =
-            'Parameters updated. Connect the Module 05 scenario engine to calculate actual spatial coverage.';
-
-    });
-
-
-    // Sidebar navigation active state
-
-    document.querySelectorAll('.nav-item').forEach(function (item) {
-
-        item.addEventListener('click', function () {
-
-            document.querySelectorAll('.nav-item').forEach(function (link) {
-                link.classList.remove('active');
-            });
-
-            this.classList.add('active');
-
+    document.querySelectorAll(".nav-link").forEach(link => {
+      link.addEventListener("click", () => {
+        document.querySelectorAll(".nav-link").forEach(item => {
+          item.classList.remove("active");
         });
 
+        link.classList.add("active");
+        sidebar.classList.remove("sidebar-open");
+      });
     });
 
-</script>
+    // Bayad map
+    const map = L.map("bayadMap", {
+      scrollWheelZoom: false
+    }).setView([23.42, 73.28], 10);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    // Expected location of the boundary GeoJSON.
+    // Change this path if your GitHub folder or filename differs.
+    const boundaryPath = "data/boundary/Bayad_Taluka_2025.geojson";
+
+    fetch(boundaryPath)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Boundary file not found");
+        }
+        return response.json();
+      })
+      .then(geojson => {
+        const boundaryLayer = L.geoJSON(geojson, {
+          style: {
+            color: "#16b8a6",
+            weight: 3,
+            opacity: 1,
+            fillColor: "#16b8a6",
+            fillOpacity: 0.12
+          }
+        }).addTo(map);
+
+        map.fitBounds(boundaryLayer.getBounds(), {
+          padding: [20, 20]
+        });
+
+        document.getElementById("mapStatus").textContent =
+          "Boundary GeoJSON loaded";
+      })
+      .catch(() => {
+        document.getElementById("mapStatus").textContent =
+          "Boundary file not connected";
+      });
+  </script>
 
 </body>
 </html>
